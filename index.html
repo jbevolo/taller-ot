@@ -104,9 +104,31 @@
                                 <label for="novedades" class="block text-sm font-medium text-gray-700">Trabajos a realizar</label>
                                 <textarea id="novedades" rows="3" class="mt-1 block w-full border-gray-300 rounded-md p-2" required></textarea>
                             </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="garantia" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                                <label for="garantia" class="ml-2 block text-sm text-gray-900">En garantía</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-gray-50 p-3 rounded-lg border">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="garantia" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    <label for="garantia" class="ml-2 block text-xs text-gray-700">En garantía</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="oblea" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    <label for="oblea" class="ml-2 block text-xs text-gray-700">Oblea</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="ph" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    <label for="ph" class="ml-2 block text-xs text-gray-700">PH</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="nv" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    <label for="nv" class="ml-2 block text-xs text-gray-700">NV</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="retencion" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    <label for="retencion" class="ml-2 block text-xs text-gray-700">Retención</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="mangueras" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    <label for="mangueras" class="ml-2 block text-xs text-gray-700">Mangueras</label>
+                                </div>
                             </div>
 
                             <!-- Sección de Fotos -->
@@ -435,6 +457,11 @@
                     dominio: document.getElementById('dominio').value.toUpperCase(),
                     novedades: document.getElementById('novedades').value,
                     garantia: document.getElementById('garantia').checked,
+                    oblea: document.getElementById('oblea').checked,
+                    ph: document.getElementById('ph').checked,
+                    nv: document.getElementById('nv').checked,
+                    retencion: document.getElementById('retencion').checked,
+                    mangueras: document.getElementById('mangueras').checked,
                     fotos: fotoUrls,
                     status: 'Abierta'
                 };
@@ -507,6 +534,16 @@
                     <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${order.nombre}</p></div>
                     <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${order.vehiculo} (${order.dominio})</p></div>
                     <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border">${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    
+                    <div class="col-span-2 grid grid-cols-3 gap-2 mt-2 bg-gray-50 p-2 rounded border">
+                        <div class="text-xs ${order.garantia ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.garantia ? 'fa-check-square' : 'fa-square'} mr-1"></i> Garantía</div>
+                        <div class="text-xs ${order.oblea ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.oblea ? 'fa-check-square' : 'fa-square'} mr-1"></i> Oblea</div>
+                        <div class="text-xs ${order.ph ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.ph ? 'fa-check-square' : 'fa-square'} mr-1"></i> PH</div>
+                        <div class="text-xs ${order.nv ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.nv ? 'fa-check-square' : 'fa-square'} mr-1"></i> NV</div>
+                        <div class="text-xs ${order.retencion ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.retencion ? 'fa-check-square' : 'fa-square'} mr-1"></i> Retención</div>
+                        <div class="text-xs ${order.mangueras ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.mangueras ? 'fa-check-square' : 'fa-square'} mr-1"></i> Mangueras</div>
+                    </div>
+
                     ${fotosHtml}
                     ${finalizationDetails}
                 </div>
@@ -558,6 +595,64 @@
             }
             submitBtn.disabled = false;
             submitBtn.innerHTML = `Guardar Finalización`;
+        });
+
+        function printWorkOrder(order) {
+            const printWindow = window.open('', '_blank', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Orden de Trabajo</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:sans-serif} @media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div id="print-area">');
+            printWindow.document.write(`
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6 pb-4 border-b">
+                        <div><h1 class="text-2xl font-bold">ORDEN DE TRABAJO</h1><p class="text-gray-600">Taller Mecánico (Online)</p></div>
+                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${order.nombre}</span></div>
+                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${order.telefono || 'N/A'}</span></div>
+                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${order.vehiculo}</span></div>
+                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${order.dominio}</span></div>
+                    </div>
+                    <h2 class="text-lg font-bold mb-2">Novedades y Trabajos a Realizar</h2>
+                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p>${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    
+                    <div class="grid grid-cols-3 gap-4 mb-6 p-4 border rounded bg-gray-50">
+                        <div><strong class="text-gray-500">Garantía:</strong> ${order.garantia ? 'SÍ' : 'NO'}</div>
+                        <div><strong class="text-gray-500">Oblea:</strong> ${order.oblea ? 'SÍ' : 'NO'}</div>
+                        <div><strong class="text-gray-500">PH:</strong> ${order.ph ? 'SÍ' : 'NO'}</div>
+                        <div><strong class="text-gray-500">NV:</strong> ${order.nv ? 'SÍ' : 'NO'}</div>
+                        <div><strong class="text-gray-500">Retención:</strong> ${order.retencion ? 'SÍ' : 'NO'}</div>
+                        <div><strong class="text-gray-500">Mangueras:</strong> ${order.mangueras ? 'SÍ' : 'NO'}</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-16 pt-16 mt-8 border-t">
+                        <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Cliente</p></div>
+                        <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Taller</p></div>
+                    </div>
+                </div>`);
+            printWindow.document.write('</div></body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        }
+
+        document.getElementById('print-draft-btn').addEventListener('click', () => {
+            const draft = {
+                order_number: orderNumberInput.value ? `${orderNumberInput.value} (Borrador)` : "Borrador",
+                fecha: document.getElementById('fecha').value,
+                nombre: document.getElementById('nombre').value,
+                telefono: document.getElementById('telefono').value,
+                vehiculo: document.getElementById('vehiculo').value,
+                dominio: document.getElementById('dominio').value.toUpperCase(),
+                novedades: document.getElementById('novedades').value,
+                garantia: document.getElementById('garantia').checked,
+                oblea: document.getElementById('oblea').checked,
+                ph: document.getElementById('ph').checked,
+                nv: document.getElementById('nv').checked,
+                retencion: document.getElementById('retencion').checked,
+                mangueras: document.getElementById('mangueras').checked,
+            };
+            if (!draft.fecha || !draft.nombre || !draft.vehiculo || !draft.dominio) return showNotification("Complete los campos básicos para imprimir un borrador.");
+            printWorkOrder(draft);
         });
 
         // --- Backup y Restauración ---
@@ -635,51 +730,6 @@
                 showNotification("Error durante la restauración: " + err.message);
             }
         }
-
-        function printWorkOrder(order) {
-            const printWindow = window.open('', '_blank', 'height=600,width=800');
-            printWindow.document.write('<html><head><title>Orden de Trabajo</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:sans-serif} @media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div id="print-area">');
-            printWindow.document.write(`
-                <div class="p-8">
-                    <div class="flex justify-between items-start mb-6 pb-4 border-b">
-                        <div><h1 class="text-2xl font-bold">ORDEN DE TRABAJO</h1><p class="text-gray-600">Taller Mecánico (Online)</p></div>
-                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
-                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${order.nombre}</span></div>
-                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${order.telefono || 'N/A'}</span></div>
-                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${order.vehiculo}</span></div>
-                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${order.dominio}</span></div>
-                    </div>
-                    <h2 class="text-lg font-bold mb-2">Novedades y Trabajos a Realizar</h2>
-                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p>${order.novedades.replace(/\n/g, '<br>')}</p></div>
-                    <div class="mb-6"><strong class="text-gray-500">En Garantía:</strong> <span class="font-bold ${order.garantia ? 'text-green-600' : 'text-red-600'}">${order.garantia ? 'SÍ' : 'NO'}</span></div>
-                    
-                    <div class="grid grid-cols-2 gap-16 pt-16 mt-8 border-t">
-                        <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Cliente</p></div>
-                        <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Taller</p></div>
-                    </div>
-                </div>`);
-            printWindow.document.write('</div></body></html>');
-            printWindow.document.close();
-            printWindow.focus();
-            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
-        }
-
-        document.getElementById('print-draft-btn').addEventListener('click', () => {
-            const draft = {
-                order_number: orderNumberInput.value ? `${orderNumberInput.value} (Borrador)` : "Borrador",
-                fecha: document.getElementById('fecha').value,
-                nombre: document.getElementById('nombre').value,
-                telefono: document.getElementById('telefono').value,
-                vehiculo: document.getElementById('vehiculo').value,
-                dominio: document.getElementById('dominio').value.toUpperCase(),
-                novedades: document.getElementById('novedades').value,
-                garantia: document.getElementById('garantia').checked,
-            };
-            if (!draft.fecha || !draft.nombre || !draft.vehiculo || !draft.dominio) return showNotification("Complete los campos básicos para imprimir un borrador.");
-            printWorkOrder(draft);
-        });
 
         // --- Notificaciones ---
         function showNotification(msg, isConfirm = false, callback = null) {

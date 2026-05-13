@@ -1,6 +1,6 @@
 const CACHE_NAME = 'taller-ot-v1';
 const ASSETS = [
-  'ORDENDETRABAJO_ONLINE.HTML',
+  'index.html',
   'manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
