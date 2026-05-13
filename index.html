@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Órdenes - Online (Supabase)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .form-section, .db-section { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Contenedor de Autenticación -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
+            <h2 id="auth-title" class="text-2xl font-bold text-center text-gray-800 mb-6">Iniciar Sesión (Online)</h2>
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                    <input type="email" id="email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input type="password" id="password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+                <div class="pt-2 space-y-3">
+                    <button type="button" id="login-btn" class="w-full flex justify-center items-center bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Entrar
+                    </button>
+                    <button type="button" id="register-btn" class="w-full flex justify-center items-center bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-user-plus mr-2"></i> Crear Cuenta
+                    </button>
+                </div>
+                <p class="text-center text-xs text-gray-500 mt-4">Tus datos se sincronizan online con Supabase.</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal de la Aplicación -->
+    <div id="app-container" class="hidden">
+        <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <header class="flex justify-between items-center mb-8">
+                <div class="text-left">
+                    <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Gestión de Taller <span class="text-indigo-600">Online</span></h1>
+                    <p id="user-display" class="text-gray-600 mt-2"></p>
+                </div>
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <button id="restore-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-upload mr-2"></i>Restaurar
+                    </button>
+                    <button id="backup-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-download mr-2"></i>Backup
+                    </button>
+                    <button id="logout-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Salir
+                    </button>
+                    <input type="file" id="restore-input" class="hidden" accept=".json">
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Columna del Formulario -->
+                <div class="lg:col-span-1">
+                    <div id="form-container" class="bg-white p-6 rounded-xl shadow-lg form-section">
+                        <h2 class="text-2xl font-bold mb-6 border-b pb-3">Nueva Orden</h2>
+                        <form id="work-order-form" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="order-number" class="block text-sm font-medium text-gray-700">N° Orden</label>
+                                    <input type="number" id="order-number" class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md p-2" readonly>
+                                </div>
+                                <div>
+                                    <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha</label>
+                                    <input type="date" id="fecha" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
+                                <input type="text" id="nombre" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                            </div>
+                            <div>
+                                <label for="telefono" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                                <input type="tel" id="telefono" class="mt-1 block w-full border-gray-300 rounded-md p-2">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="vehiculo" class="block text-sm font-medium text-gray-700">Vehículo</label>
+                                    <input type="text" id="vehiculo" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                                </div>
+                                <div>
+                                    <label for="dominio" class="block text-sm font-medium text-gray-700">Dominio</label>
+                                    <input type="text" id="dominio" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="novedades" class="block text-sm font-medium text-gray-700">Trabajos a realizar</label>
+                                <textarea id="novedades" rows="3" class="mt-1 block w-full border-gray-300 rounded-md p-2" required></textarea>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="garantia" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                <label for="garantia" class="ml-2 block text-sm text-gray-900">En garantía</label>
+                            </div>
+
+                            <!-- Sección de Fotos -->
+                            <div class="pt-4 border-t">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Fotos del Trabajo</label>
+                                <div class="flex items-center justify-center w-full">
+                                    <label for="fotos-input" class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <i class="fas fa-camera text-xl text-gray-400"></i>
+                                            <p class="text-xs text-gray-500 mt-1">Subir Fotos (Máx 5)</p>
+                                        </div>
+                                        <input id="fotos-input" type="file" class="hidden" multiple accept="image/*" />
+                                    </label>
+                                </div>
+                                <div id="fotos-preview" class="grid grid-cols-5 gap-1 mt-2"></div>
+                            </div>
+
+                            <button type="button" id="print-draft-btn" class="w-full flex justify-center items-center bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 mb-2">
+                                <i class="fas fa-print mr-2"></i> Imprimir Borrador
+                            </button>
+                            <button type="submit" id="save-btn" class="w-full flex justify-center items-center bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700">
+                                <i class="fas fa-cloud-upload-alt mr-2"></i> Guardar en la Nube
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Columna de la Base de Datos -->
+                <div class="lg:col-span-2">
+                    <div id="db-container" class="bg-white p-6 rounded-xl shadow-lg db-section">
+                        <div class="flex justify-between items-center mb-4 border-b pb-3">
+                            <h2 class="text-2xl font-bold">Órdenes Online</h2>
+                            <div class="relative w-64">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </span>
+                                <input type="text" id="search-input" placeholder="Buscar..." class="w-full pl-10 p-2 border border-gray-300 rounded-md">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N°</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehículo</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase text-center"><i class="fas fa-image" title="Fotos"></i></th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table-body" class="bg-white divide-y divide-gray-200">
+                                    <tr><td colspan="6" class="text-center p-8 text-gray-500">Cargando datos...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales -->
+    <div id="notification-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
+            <p id="notification-message" class="text-gray-800"></p>
+            <div id="modal-buttons" class="mt-4"></div>
+        </div>
+    </div>
+
+    <div id="view-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Detalles de la Orden</h2>
+                <button onclick="document.getElementById('view-order-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="view-order-content" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- Modal Visor de Imágenes (Lightbox) -->
+    <div id="lightbox-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-[60] flex justify-center items-center p-4" onclick="this.classList.add('hidden')">
+        <button class="absolute top-4 right-4 text-white text-4xl">&times;</button>
+        <img id="lightbox-img" src="" class="max-w-full max-h-full rounded-lg shadow-2xl">
+    </div>
+
+    <!-- Modal para Finalizar Orden -->
+    <div id="complete-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full">
+            <h2 class="text-2xl font-bold mb-4">Finalizar Orden de Trabajo</h2>
+            <form id="complete-order-form">
+                <input type="hidden" id="complete-order-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="monto-cobrado" class="block text-sm font-medium text-gray-700">Monto Cobrado ($)</label>
+                        <input type="number" id="monto-cobrado" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" required>
+                    </div>
+                    <div>
+                        <label for="notas-extra" class="block text-sm font-medium text-gray-700">Notas Adicionales (Opcional)</label>
+                        <textarea id="notas-extra" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" onclick="document.getElementById('complete-order-modal').classList.add('hidden')" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Cancelar</button>
+                    <button type="submit" id="complete-submit-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Guardar Finalización</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- CONFIGURACIÓN SUPABASE ---
+        const SUPABASE_URL = 'https://ipddfmlhcsivjpkqsmcc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZGRmbWxoY3Npdmpwa3FzbWNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzI4MDAsImV4cCI6MjA5NDI0ODgwMH0.3UfVW1WUtpV31Kb5Ay4p0IcCSB4SIiATS3LJNL0Bqg8';
+        
+        const { createClient } = window.supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- Variables de Estado ---
+        let currentUser = null;
+        let allOrders = [];
+        let selectedFotosFiles = [];
+
+        // --- Selectores ---
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const userDisplay = document.getElementById('user-display');
+        const tableBody = document.getElementById('orders-table-body');
+        const workOrderForm = document.getElementById('work-order-form');
+        const orderNumberInput = document.getElementById('order-number');
+        const fotosInput = document.getElementById('fotos-input');
+        const fotosPreview = document.getElementById('fotos-preview');
+
+        // --- Lógica de Autenticación ---
+        async function checkUser() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user) {
+                currentUser = user;
+                userDisplay.textContent = `Sesión iniciada como: ${user.email}`;
+                authContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                fetchOrders();
+            } else {
+                currentUser = null;
+                authContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!email || !password) {
+                showNotification("Por favor, ingresa correo y contraseña.");
+                return;
+            }
+
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) showNotification("Error: " + error.message);
+            else checkUser();
+        });
+
+        document.getElementById('register-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                showNotification("Por favor, ingresa correo y contraseña para crear la cuenta.");
+                return;
+            }
+
+            const { error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                showNotification("Error: " + error.message);
+            } else {
+                showNotification("¡Registro iniciado! Revisa tu correo electrónico para confirmar tu cuenta y poder entrar.");
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            checkUser();
+        });
+
+        // --- Gestión de Órdenes ---
+        async function fetchOrders() {
+            const { data, error } = await supabaseClient
+                .from('work_orders')
+                .select('*')
+                .order('order_number', { ascending: false });
+            
+            if (error) {
+                console.error(error);
+                showNotification("Error cargando órdenes.");
+            } else {
+                allOrders = data;
+                renderOrders(data);
+                setNextOrderNumber();
+            }
+        }
+
+        function renderOrders(orders) {
+            tableBody.innerHTML = '';
+            if (orders.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No hay órdenes registradas.</td></tr>`;
+                return;
+            }
+            orders.forEach(order => {
+                const tr = document.createElement('tr');
+                const statusColor = order.status === 'Finalizada' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                const hasFotos = order.fotos && order.fotos.length > 0;
+                
+                tr.innerHTML = `
+                    <td class="px-4 py-4 font-bold">#${order.order_number}</td>
+                    <td class="px-4 py-4">${order.fecha}</td>
+                    <td class="px-4 py-4">${order.nombre}</td>
+                    <td class="px-4 py-4">${order.vehiculo}</td>
+                    <td class="px-4 py-4 text-center">
+                        ${hasFotos ? `<i class="fas fa-camera text-indigo-500" title="${order.fotos.length} fotos"></i>` : `<span class="text-gray-300">-</span>`}
+                    </td>
+                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">${order.status}</span></td>
+                    <td class="px-4 py-4 text-sm">
+                        <div class="flex items-center space-x-3">
+                            <button class="view-btn text-blue-600 hover:text-blue-900" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></button>
+                            ${order.status !== 'Finalizada' ? `<button class="complete-btn text-green-600 hover:text-green-900" title="Finalizar"><i class="fas fa-check-circle fa-lg"></i></button>` : ''}
+                            <button class="print-btn text-indigo-600 hover:text-indigo-900" title="Imprimir"><i class="fas fa-print fa-lg"></i></button>
+                            <button class="delete-btn text-red-600 hover:text-red-900" title="Eliminar"><i class="fas fa-trash fa-lg"></i></button>
+                        </div>
+                    </td>
+                `;
+                tr.querySelector('.view-btn').onclick = () => viewOrder(order);
+                if (order.status !== 'Finalizada') {
+                    tr.querySelector('.complete-btn').onclick = () => openCompleteModal(order);
+                }
+                tr.querySelector('.print-btn').onclick = () => printWorkOrder(order);
+                tr.querySelector('.delete-btn').onclick = () => deleteOrder(order.id, order.order_number);
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function setNextOrderNumber() {
+            const next = allOrders.length > 0 ? Math.max(...allOrders.map(o => o.order_number)) + 1 : 1;
+            orderNumberInput.value = next;
+        }
+
+        // --- Manejo de Fotos y Compresión ---
+        fotosInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            for (const file of files) {
+                if (selectedFotosFiles.length >= 5) break;
+                const compressedBlob = await compressImage(file);
+                selectedFotosFiles.push({ blob: compressedBlob, name: file.name });
+            }
+            renderFotosPreview();
+        });
+
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        canvas.width = width; canvas.height = height;
+                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
+                    };
+                };
+            });
+        }
+
+        function renderFotosPreview() {
+            fotosPreview.innerHTML = '';
+            selectedFotosFiles.forEach((foto, i) => {
+                const div = document.createElement('div');
+                div.className = "relative h-12 w-full";
+                div.innerHTML = `<img src="${URL.createObjectURL(foto.blob)}" class="h-full w-full object-cover rounded"><button type="button" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-[10px]" onclick="removeFoto(${i})">&times;</button>`;
+                fotosPreview.appendChild(div);
+            });
+        }
+        window.removeFoto = (i) => { selectedFotosFiles.splice(i, 1); renderFotosPreview(); };
+
+        // --- Guardar Orden ---
+        workOrderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...`;
+
+            try {
+                // 1. Subir fotos a Supabase Storage
+                const fotoUrls = [];
+                for (const foto of selectedFotosFiles) {
+                    const fileName = `${Date.now()}_${foto.name}`;
+                    const { data, error: uploadError } = await supabaseClient.storage
+                        .from('photos')
+                        .upload(`${currentUser.id}/${fileName}`, foto.blob);
+                    
+                    if (uploadError) {
+                        console.error("Error subiendo foto:", uploadError);
+                        throw new Error("Error en Storage: " + uploadError.message + ". Verifica que el bucket 'photos' exista y sea público.");
+                    }
+                    
+                    if (data) {
+                        const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
+                        fotoUrls.push(publicUrl);
+                    }
+                }
+
+                // 2. Guardar en Base de Datos
+                const newOrder = {
+                    user_id: currentUser.id,
+                    order_number: parseInt(orderNumberInput.value),
+                    fecha: document.getElementById('fecha').value,
+                    nombre: document.getElementById('nombre').value,
+                    telefono: document.getElementById('telefono').value,
+                    vehiculo: document.getElementById('vehiculo').value,
+                    dominio: document.getElementById('dominio').value.toUpperCase(),
+                    novedades: document.getElementById('novedades').value,
+                    garantia: document.getElementById('garantia').checked,
+                    fotos: fotoUrls,
+                    status: 'Abierta'
+                };
+
+                const { error } = await supabaseClient.from('work_orders').insert([newOrder]);
+                if (error) throw error;
+
+                showNotification("Orden guardada online correctamente.");
+                workOrderForm.reset();
+                selectedFotosFiles = [];
+                renderFotosPreview();
+                fetchOrders();
+            } catch (err) {
+                console.error(err);
+                showNotification("Error al guardar: " + err.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Guardar en la Nube`;
+            }
+        });
+
+        async function deleteOrder(id, num) {
+            showNotification(`¿Eliminar orden #${num} de la nube?`, true, async () => {
+                const { error } = await supabaseClient.from('work_orders').delete().eq('id', id);
+                if (error) showNotification("Error al eliminar.");
+                else fetchOrders();
+            });
+        }
+
+        function viewOrder(order) {
+            const modal = document.getElementById('view-order-modal');
+            const content = document.getElementById('view-order-content');
+            
+            let finalizationDetails = '';
+            if (order.status === 'Finalizada') {
+                finalizationDetails = `
+                    <div class="col-span-2 pt-4 border-t mt-4">
+                        <h3 class="text-sm font-bold text-green-700">Detalles de Finalización</h3>
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div><p class="text-xs text-gray-500">Monto Cobrado</p><p class="font-bold">$ ${order.monto_cobrado}</p></div>
+                            ${order.notas_extra ? `<div class="col-span-2"><p class="text-xs text-gray-500">Notas Adicionales</p><p class="p-2 bg-green-50 rounded mt-1">${order.notas_extra}</p></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            let fotosHtml = '';
+            if (order.fotos && order.fotos.length > 0) {
+                fotosHtml = `
+                    <div class="col-span-2 pt-4 border-t mt-4">
+                        <h3 class="text-sm font-bold text-gray-700 mb-2">Galería de Fotos</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            ${order.fotos.map(f => `
+                                <div class="relative aspect-square overflow-hidden rounded-lg border shadow-sm group cursor-zoom-in" onclick="openLightbox('${f}')">
+                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                                        <i class="fas fa-search-plus text-white opacity-0 group-hover:opacity-100 text-xl"></i>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${order.order_number}</p></div>
+                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${order.fecha}</p></div>
+                    <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${order.nombre}</p></div>
+                    <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${order.vehiculo} (${order.dominio})</p></div>
+                    <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border">${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    ${fotosHtml}
+                    ${finalizationDetails}
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function openLightbox(url) {
+            const lb = document.getElementById('lightbox-modal');
+            const img = document.getElementById('lightbox-img');
+            img.src = url;
+            lb.classList.remove('hidden');
+            event.stopPropagation();
+        }
+        window.openLightbox = openLightbox;
+
+        function openCompleteModal(order) {
+            document.getElementById('complete-order-id').value = order.id;
+            document.getElementById('monto-cobrado').value = order.monto_cobrado || '';
+            document.getElementById('notas-extra').value = order.notas_extra || '';
+            document.getElementById('complete-order-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('complete-order-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('complete-order-id').value;
+            const monto = document.getElementById('monto-cobrado').value;
+            const notas = document.getElementById('notas-extra').value;
+            const submitBtn = document.getElementById('complete-submit-btn');
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...`;
+
+            const { error } = await supabaseClient
+                .from('work_orders')
+                .update({ 
+                    status: 'Finalizada', 
+                    monto_cobrado: parseFloat(monto), 
+                    notas_extra: notas 
+                })
+                .eq('id', id);
+
+            if (error) {
+                showNotification("Error al actualizar: " + error.message);
+            } else {
+                showNotification("Orden finalizada correctamente.");
+                document.getElementById('complete-order-modal').classList.add('hidden');
+                fetchOrders();
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `Guardar Finalización`;
+        });
+
+        // --- Backup y Restauración ---
+        const backupBtn = document.getElementById('backup-btn');
+        const restoreBtn = document.getElementById('restore-btn');
+        const restoreInput = document.getElementById('restore-input');
+
+        backupBtn.addEventListener('click', () => {
+            if (allOrders.length === 0) return showNotification("No hay datos para exportar.");
+            
+            const jsonString = JSON.stringify(allOrders, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const today = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `backup_online_workshop_${today}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification("Backup exportado con éxito.");
+        });
+
+        restoreBtn.addEventListener('click', () => restoreInput.click());
+        
+        restoreInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (!Array.isArray(data)) throw new Error("Formato inválido");
+                    
+                    showNotification(
+                        "<b>¡Atención!</b> Estás a punto de reemplazar tus datos en la nube con los del archivo. Esta acción no se puede deshacer. <br><br> ¿Deseas continuar?",
+                        true,
+                        () => restoreToCloud(data)
+                    );
+                } catch (err) {
+                    showNotification("Error: El archivo no es válido.");
+                }
+            };
+            reader.readAsText(file);
+            restoreInput.value = '';
+        });
+
+        async function restoreToCloud(data) {
+            showNotification("Restaurando datos en la nube... Por favor espera.");
+            try {
+                // 1. Borrar órdenes actuales del usuario
+                const { error: delError } = await supabaseClient
+                    .from('work_orders')
+                    .delete()
+                    .eq('user_id', currentUser.id);
+                
+                if (delError) throw delError;
+
+                // 2. Preparar nuevos datos (limpiando IDs antiguos si es necesario)
+                const newOrders = data.map(order => {
+                    const { id, ...rest } = order; // Dejar que Supabase genere nuevos UUIDs
+                    return { ...rest, user_id: currentUser.id };
+                });
+
+                // 3. Insertar en lotes
+                const { error: insError } = await supabaseClient
+                    .from('work_orders')
+                    .insert(newOrders);
+                
+                if (insError) throw insError;
+
+                showNotification("¡Restauración completada con éxito!");
+                fetchOrders();
+            } catch (err) {
+                console.error(err);
+                showNotification("Error durante la restauración: " + err.message);
+            }
+        }
+
+        function printWorkOrder(order) {
+            const printWindow = window.open('', '_blank', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Orden de Trabajo</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:sans-serif} @media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div id="print-area">');
+            printWindow.document.write(`
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6 pb-4 border-b">
+                        <div><h1 class="text-2xl font-bold">ORDEN DE TRABAJO</h1><p class="text-gray-600">Taller Mecánico (Online)</p></div>
+                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${order.nombre}</span></div>
+                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${order.telefono || 'N/A'}</span></div>
+                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${order.vehiculo}</span></div>
+                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${order.dominio}</span></div>
+                    </div>
+                    <h2 class="text-lg font-bold mb-2">Novedades y Trabajos a Realizar</h2>
+                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p>${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    <div class="mb-6"><strong class="text-gray-500">En Garantía:</strong> <span class="font-bold ${order.garantia ? 'text-green-600' : 'text-red-600'}">${order.garantia ? 'SÍ' : 'NO'}</span></div>
+                    
+                    <div class="grid grid-cols-2 gap-16 pt-16 mt-8 border-t">
+                        <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Cliente</p></div>
+                        <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Taller</p></div>
+                    </div>
+                </div>`);
+            printWindow.document.write('</div></body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        }
+
+        document.getElementById('print-draft-btn').addEventListener('click', () => {
+            const draft = {
+                order_number: orderNumberInput.value ? `${orderNumberInput.value} (Borrador)` : "Borrador",
+                fecha: document.getElementById('fecha').value,
+                nombre: document.getElementById('nombre').value,
+                telefono: document.getElementById('telefono').value,
+                vehiculo: document.getElementById('vehiculo').value,
+                dominio: document.getElementById('dominio').value.toUpperCase(),
+                novedades: document.getElementById('novedades').value,
+                garantia: document.getElementById('garantia').checked,
+            };
+            if (!draft.fecha || !draft.nombre || !draft.vehiculo || !draft.dominio) return showNotification("Complete los campos básicos para imprimir un borrador.");
+            printWorkOrder(draft);
+        });
+
+        // --- Notificaciones ---
+        function showNotification(msg, isConfirm = false, callback = null) {
+            const modal = document.getElementById('notification-modal');
+            const message = document.getElementById('notification-message');
+            const buttons = document.getElementById('modal-buttons');
+            message.innerHTML = msg;
+            modal.classList.remove('hidden');
+            buttons.innerHTML = '';
+            if (isConfirm) {
+                const b1 = document.createElement('button'); b1.className = "bg-red-600 text-white px-4 py-2 rounded-lg mr-2"; b1.textContent = "Confirmar";
+                b1.onclick = () => { callback(); modal.classList.add('hidden'); };
+                const b2 = document.createElement('button'); b2.className = "bg-gray-300 px-4 py-2 rounded-lg"; b2.textContent = "Cancelar";
+                b2.onclick = () => modal.classList.add('hidden');
+                buttons.append(b1, b2);
+            } else {
+                const b = document.createElement('button'); b.className = "bg-indigo-600 text-white px-4 py-2 rounded-lg"; b.textContent = "OK";
+                b.onclick = () => modal.classList.add('hidden');
+                buttons.append(b);
+            }
+        }
+
+        checkUser();
+        document.getElementById('fecha').valueAsDate = new Date();
+
+        // Registro de Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('App lista para usar offline'))
+                    .catch(err => console.log('Error en PWA:', err));
+            });
+        }
+    </script>
+</body>
+</html>
