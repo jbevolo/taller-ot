@@ -355,6 +355,7 @@
                     <td class="px-4 py-4 text-sm">
                         <div class="flex items-center space-x-3">
                             <button class="view-btn text-blue-600 hover:text-blue-900" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></button>
+                            <button class="whatsapp-btn text-green-500 hover:text-green-700" title="Enviar por WhatsApp"><i class="fab fa-whatsapp fa-lg"></i></button>
                             ${order.status !== 'Finalizada' ? `<button class="complete-btn text-green-600 hover:text-green-900" title="Finalizar"><i class="fas fa-check-circle fa-lg"></i></button>` : ''}
                             <button class="print-btn text-indigo-600 hover:text-indigo-900" title="Imprimir"><i class="fas fa-print fa-lg"></i></button>
                             <button class="delete-btn text-red-600 hover:text-red-900" title="Eliminar"><i class="fas fa-trash fa-lg"></i></button>
@@ -362,6 +363,7 @@
                     </td>
                 `;
                 tr.querySelector('.view-btn').onclick = () => viewOrder(order);
+                tr.querySelector('.whatsapp-btn').onclick = () => shareViaWhatsApp(order);
                 if (order.status !== 'Finalizada') {
                     tr.querySelector('.complete-btn').onclick = () => openCompleteModal(order);
                 }
@@ -596,6 +598,35 @@
             submitBtn.disabled = false;
             submitBtn.innerHTML = `Guardar Finalización`;
         });
+
+        // --- Compartir WhatsApp ---
+        function shareViaWhatsApp(order) {
+            const phone = order.telefono ? order.telefono.replace(/\D/g, '') : '';
+            
+            let message = `*ORDEN DE TRABAJO #${order.order_number}*\n\n`;
+            message += `Hola *${order.nombre}*, te envío los detalles de tu vehículo *${order.vehiculo}* (${order.dominio}):\n\n`;
+            message += `*Estado:* ${order.status}\n`;
+            message += `*Trabajos:* ${order.novedades}\n\n`;
+            
+            if (order.fotos && order.fotos.length > 0) {
+                message += `*Fotos del trabajo:*\n`;
+                order.fotos.forEach((url, i) => {
+                    message += `📷 Foto ${i+1}: ${url}\n`;
+                });
+                message += `\n`;
+            }
+
+            if (order.status === 'Finalizada') {
+                message += `*Monto Cobrado:* $${order.monto_cobrado}\n`;
+                if (order.notas_extra) message += `*Notas:* ${order.notas_extra}\n`;
+            }
+
+            message += `\n_Enviado desde Gestión de Taller OT_`;
+
+            const encodedMsg = encodeURIComponent(message);
+            const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`;
+            window.open(waUrl, '_blank');
+        }
 
         function printWorkOrder(order) {
             const printWindow = window.open('', '_blank', 'height=600,width=800');
