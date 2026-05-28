@@ -44,6 +44,103 @@
         </div>
     </div>
 
+    <!-- Contenedor de Vista Pública (para el Cliente) -->
+    <div id="public-container" class="hidden min-h-screen bg-gray-50 text-gray-800 pb-12">
+        <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                <!-- Encabezado con degradado premium -->
+                <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 sm:p-8 relative">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="bg-white bg-opacity-20 text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Orden Digital Oficial</span>
+                            <h1 id="pub-order-number" class="text-3xl sm:text-4xl font-extrabold mt-2 tracking-tight">Orden #--</h1>
+                        </div>
+                        <div class="text-right">
+                            <span id="pub-order-status" class="px-3.5 py-2 rounded-full text-xs sm:text-sm font-bold shadow-sm inline-block">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenido -->
+                <div class="p-6 sm:p-8 space-y-8">
+                    <!-- Sección Vehículo -->
+                    <div class="grid grid-cols-2 gap-4 pb-6 border-b border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Vehículo</p>
+                            <p id="pub-vehiculo" class="text-lg font-bold text-gray-800 mt-1">--</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Dominio (Patente)</p>
+                            <p id="pub-dominio" class="text-lg font-mono font-bold bg-gray-100 px-3 py-1 rounded-lg text-gray-700 mt-1 inline-block uppercase border border-gray-200">--</p>
+                        </div>
+                    </div>
+
+                    <!-- Datos del Cliente y Fecha -->
+                    <div class="grid grid-cols-2 gap-4 pb-6 border-b border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Cliente</p>
+                            <p id="pub-cliente" class="text-lg font-bold text-gray-800 mt-1">--</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Fecha de Ingreso</p>
+                            <p id="pub-fecha" class="text-lg font-bold text-gray-800 mt-1">--</p>
+                        </div>
+                    </div>
+
+                    <!-- Trabajos Realizados -->
+                    <div>
+                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Trabajos a Realizar / Novedades</h2>
+                        <div id="pub-trabajos" class="p-5 bg-indigo-50 bg-opacity-40 border border-indigo-100 rounded-xl text-gray-700 whitespace-pre-line leading-relaxed text-sm sm:text-base font-medium">
+                            --
+                        </div>
+                    </div>
+
+                    <!-- Detalles Adicionales (Checks) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div id="pub-garantia" class="flex items-center text-sm text-gray-400"><i class="fas fa-circle mr-2 text-[8px]"></i> Garantía</div>
+                        <div id="pub-oblea" class="flex items-center text-sm text-gray-400"><i class="fas fa-circle mr-2 text-[8px]"></i> Oblea</div>
+                        <div id="pub-ph" class="flex items-center text-sm text-gray-400"><i class="fas fa-circle mr-2 text-[8px]"></i> PH</div>
+                        <div id="pub-nv" class="flex items-center text-sm text-gray-400"><i class="fas fa-circle mr-2 text-[8px]"></i> NV</div>
+                        <div id="pub-retencion" class="flex items-center text-sm text-gray-400"><i class="fas fa-circle mr-2 text-[8px]"></i> Retención</div>
+                        <div id="pub-mangueras" class="flex items-center text-sm text-gray-400"><i class="fas fa-circle mr-2 text-[8px]"></i> Mangueras</div>
+                    </div>
+
+                    <!-- Galería de Fotos -->
+                    <div id="pub-galeria-section" class="hidden">
+                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Galería de Fotos del Vehículo</h2>
+                        <div id="pub-galeria" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <!-- Fotos cargadas dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Detalles Finalización -->
+                    <div id="pub-finalizacion-section" class="hidden p-6 bg-green-50 border border-green-100 rounded-2xl shadow-sm">
+                        <div class="flex items-center space-x-2 text-green-800 mb-3">
+                            <i class="fas fa-check-circle text-lg"></i>
+                            <h3 class="text-sm font-bold uppercase tracking-wider">Orden Finalizada y Lista</h3>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-green-600 font-bold uppercase tracking-wider">Monto Total Cobrado</p>
+                                <p id="pub-monto" class="text-3xl font-black text-green-700 mt-1">$ --</p>
+                            </div>
+                            <div id="pub-notas-container">
+                                <p class="text-xs text-green-600 font-bold uppercase tracking-wider">Notas de Entrega</p>
+                                <p id="pub-notas" class="text-sm text-green-800 mt-1.5 whitespace-pre-line font-medium leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pie de página premium -->
+                <div class="bg-gray-50 border-t border-gray-100 p-6 text-center text-xs text-gray-400">
+                    <p class="font-bold text-gray-500 mb-1">Taller de Órdenes de Trabajo</p>
+                    <p>Este portal es de uso exclusivo para clientes. Si tienes dudas, contáctanos.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Contenedor Principal de la Aplicación -->
     <div id="app-container" class="hidden">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -176,6 +273,7 @@
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehículo</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dominio</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase text-center"><i class="fas fa-image" title="Fotos"></i></th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
@@ -207,6 +305,22 @@
                 <button onclick="document.getElementById('view-order-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <div id="view-order-content" class="space-y-4"></div>
+            <div id="view-order-actions" class="mt-6 flex flex-col space-y-2">
+                <button id="view-whatsapp-btn" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 flex justify-center items-center">
+                    <i class="fab fa-whatsapp mr-2 text-xl"></i> Compartir por WhatsApp
+                </button>
+            </div>
+            <div id="add-photos-section" class="mt-6 pt-4 border-t hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2 font-bold">Añadir más fotos a esta orden</label>
+                <input type="file" id="add-more-fotos-input" class="hidden" multiple accept="image/*">
+                <button type="button" onclick="document.getElementById('add-more-fotos-input').click()" class="bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded-lg hover:bg-indigo-200 w-full flex justify-center items-center">
+                    <i class="fas fa-plus-circle mr-2"></i> Seleccionar Fotos Nuevas
+                </button>
+                <div id="add-more-preview" class="grid grid-cols-5 gap-1 mt-2"></div>
+                <button id="upload-more-btn" class="hidden w-full mt-2 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">
+                    Confirmar Subida
+                </button>
+            </div>
         </div>
     </div>
 
@@ -348,6 +462,7 @@
                     <td class="px-4 py-4">${order.fecha}</td>
                     <td class="px-4 py-4">${order.nombre}</td>
                     <td class="px-4 py-4">${order.vehiculo}</td>
+                    <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${order.dominio}</span></td>
                     <td class="px-4 py-4 text-center">
                         ${hasFotos ? `<i class="fas fa-camera text-indigo-500" title="${order.fotos.length} fotos"></i>` : `<span class="text-gray-300">-</span>`}
                     </td>
@@ -398,13 +513,43 @@
                     img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
                         let width = img.width;
                         let height = img.height;
-                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                        canvas.width = width; canvas.height = height;
-                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
+                        
+                        // Resolución HD Premium (1920px máx) para conservar nitidez y detalles mecánicos
+                        const MAX_DIM = 1920; 
+                        
+                        if (width > MAX_DIM || height > MAX_DIM) {
+                            if (width > height) {
+                                height *= MAX_DIM / width;
+                                width = MAX_DIM;
+                            } else {
+                                width *= MAX_DIM / height;
+                                height = MAX_DIM;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Compresión inteligente iterativa para garantizar peso < 1MB con máxima fidelidad
+                        let quality = 0.85; // Calidad inicial súper nítida
+                        
+                        function attemptCompress() {
+                            canvas.toBlob((blob) => {
+                                // Si el archivo pesa menos de 1MB o la calidad llegó al límite aceptable (0.4), finalizamos
+                                if (blob.size < 1024 * 1024 || quality <= 0.4) {
+                                    resolve(blob);
+                                } else {
+                                    quality -= 0.05; // Ajustamos levemente la calidad de forma progresiva
+                                    attemptCompress();
+                                }
+                            }, 'image/jpeg', quality);
+                        }
+                        
+                        attemptCompress();
                     };
                 };
             });
@@ -516,12 +661,13 @@
                     <div class="col-span-2 pt-4 border-t mt-4">
                         <h3 class="text-sm font-bold text-gray-700 mb-2">Galería de Fotos</h3>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            ${order.fotos.map(f => `
-                                <div class="relative aspect-square overflow-hidden rounded-lg border shadow-sm group cursor-zoom-in" onclick="openLightbox('${f}')">
-                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
-                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                                        <i class="fas fa-search-plus text-white opacity-0 group-hover:opacity-100 text-xl"></i>
-                                    </div>
+                            ${order.fotos.map((f, i) => `
+                                <div class="relative aspect-square overflow-hidden rounded-lg border shadow-sm group">
+                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 cursor-zoom-in" onclick="openLightbox('${f}')">
+                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all pointer-events-none"></div>
+                                    <button onclick="deleteSpecificPhoto('${order.id}', '${f}', ${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity" title="Borrar Foto">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
                                 </div>
                             `).join('')}
                         </div>
@@ -534,6 +680,7 @@
                     <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${order.order_number}</p></div>
                     <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${order.fecha}</p></div>
                     <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${order.nombre}</p></div>
+                    <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${order.telefono}" class="text-indigo-600">${order.telefono || 'N/A'}</a></p></div>
                     <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${order.vehiculo} (${order.dominio})</p></div>
                     <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border">${order.novedades.replace(/\n/g, '<br>')}</p></div>
                     
@@ -550,8 +697,127 @@
                     ${finalizationDetails}
                 </div>
             `;
+            
+            // Preparar sección de añadir más fotos
+            const addSection = document.getElementById('add-photos-section');
+            if (order.status !== 'Finalizada') {
+                addSection.classList.remove('hidden');
+                setupAddMorePhotos(order);
+            } else {
+                addSection.classList.add('hidden');
+            }
+
             modal.classList.remove('hidden');
+
+            // Configurar botón de WhatsApp en el modal
+            document.getElementById('view-whatsapp-btn').onclick = () => shareViaWhatsApp(order);
         }
+
+        let morePhotosToUpload = [];
+        function setupAddMorePhotos(order) {
+            const input = document.getElementById('add-more-fotos-input');
+            const preview = document.getElementById('add-more-preview');
+            const uploadBtn = document.getElementById('upload-more-btn');
+            
+            morePhotosToUpload = [];
+            preview.innerHTML = '';
+            uploadBtn.classList.add('hidden');
+
+            input.onchange = async (e) => {
+                const files = Array.from(e.target.files);
+                for (const file of files) {
+                    const compressed = await compressImage(file);
+                    morePhotosToUpload.push({ blob: compressed, name: file.name });
+                }
+                renderMorePhotosPreview();
+            };
+
+            function renderMorePhotosPreview() {
+                preview.innerHTML = '';
+                morePhotosToUpload.forEach((foto, i) => {
+                    const div = document.createElement('div');
+                    div.className = "relative h-12 w-full";
+                    div.innerHTML = `<img src="${URL.createObjectURL(foto.blob)}" class="h-full w-full object-cover rounded">`;
+                    preview.appendChild(div);
+                });
+                if (morePhotosToUpload.length > 0) uploadBtn.classList.remove('hidden');
+                else uploadBtn.classList.add('hidden');
+            }
+
+            uploadBtn.onclick = async () => {
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Subiendo...`;
+                
+                try {
+                    const newUrls = [];
+                    for (const foto of morePhotosToUpload) {
+                        const fileName = `extra_${Date.now()}_${foto.name}`;
+                        const { data } = await supabaseClient.storage.from('photos').upload(`${currentUser.id}/${fileName}`, foto.blob);
+                        if (data) {
+                            const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
+                            newUrls.push(publicUrl);
+                        }
+                    }
+
+                    const currentFotos = order.fotos || [];
+                    const updatedFotos = [...currentFotos, ...newUrls];
+
+                    const { error } = await supabaseClient
+                        .from('work_orders')
+                        .update({ fotos: updatedFotos })
+                        .eq('id', order.id);
+
+                    if (error) throw error;
+                    
+                    showNotification("Fotos añadidas con éxito.");
+                    document.getElementById('view-order-modal').classList.add('hidden');
+                    fetchOrders();
+                } catch (err) {
+                    showNotification("Error: " + err.message);
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = "Confirmar Subida";
+                }
+            };
+        }
+
+        async function deleteSpecificPhoto(orderId, photoUrl, index) {
+            showNotification("¿Estás seguro de que deseas eliminar esta foto permanentemente?", true, async () => {
+                try {
+                    // 1. Obtener la orden actualizada
+                    const { data: order } = await supabaseClient.from('work_orders').select('fotos').eq('id', orderId).single();
+                    if (!order) return;
+
+                    const updatedFotos = order.fotos.filter(f => f !== photoUrl);
+
+                    // 2. Borrar de la Base de Datos
+                    const { error: dbError } = await supabaseClient
+                        .from('work_orders')
+                        .update({ fotos: updatedFotos })
+                        .eq('id', orderId);
+
+                    if (dbError) throw dbError;
+
+                    // 3. Borrar del Storage (opcional pero recomendado)
+                    try {
+                        const pathParts = photoUrl.split('/photos/')[1];
+                        if (pathParts) {
+                            const filePath = decodeURIComponent(pathParts);
+                            await supabaseClient.storage.from('photos').remove([filePath]);
+                        }
+                    } catch (storageErr) {
+                        console.error("Error al borrar de storage:", storageErr);
+                    }
+
+                    showNotification("Foto eliminada correctamente.");
+                    document.getElementById('view-order-modal').classList.add('hidden');
+                    fetchOrders();
+                } catch (err) {
+                    showNotification("Error: " + err.message);
+                }
+            });
+        }
+        window.deleteSpecificPhoto = deleteSpecificPhoto;
 
         function openLightbox(url) {
             const lb = document.getElementById('lightbox-modal');
@@ -602,31 +868,144 @@
         // --- Compartir WhatsApp ---
         function shareViaWhatsApp(order) {
             const phone = order.telefono ? order.telefono.replace(/\D/g, '') : '';
+            const fotosArray = Array.isArray(order.fotos) ? order.fotos : (order.fotos ? [order.fotos] : []);
             
-            let message = `*ORDEN DE TRABAJO #${order.order_number}*\n\n`;
-            message += `Hola *${order.nombre}*, te envío los detalles de tu vehículo *${order.vehiculo}* (${order.dominio}):\n\n`;
-            message += `*Estado:* ${order.status}\n`;
-            message += `*Trabajos:* ${order.novedades}\n\n`;
+            // Construir el enlace al Portal Digital de la Orden
+            const currentUrl = window.location.href.split('?')[0];
+            const orderLink = `${currentUrl}?id=${order.id}`;
             
-            if (order.fotos && order.fotos.length > 0) {
-                message += `*Fotos del trabajo:*\n`;
-                order.fotos.forEach((url, i) => {
-                    message += `📷 Foto ${i+1}: ${url}\n`;
-                });
-                message += `\n`;
-            }
-
+            let message = `🛠️ *ORDEN DE TRABAJO #${order.order_number}*\n\n`;
+            message += `Hola *${order.nombre}*, te compartimos el estado y los detalles de tu vehículo *${order.vehiculo}* (${order.dominio}):\n\n`;
+            message += `📌 *Estado:* ${order.status}\n`;
+            message += `📝 *Trabajos:* ${order.novedades}\n\n`;
+            
             if (order.status === 'Finalizada') {
-                message += `*Monto Cobrado:* $${order.monto_cobrado}\n`;
-                if (order.notas_extra) message += `*Notas:* ${order.notas_extra}\n`;
+                message += `💰 *Monto Cobrado:* $${order.monto_cobrado}\n`;
+                if (order.notas_extra) message += `💬 *Notas:* ${order.notas_extra}\n\n`;
             }
 
-            message += `\n_Enviado desde Gestión de Taller OT_`;
+            message += `📱 *Ver Orden Completa y Galería de Fotos (${fotosArray.length}):*\n`;
+            message += `${orderLink}\n\n`;
+
+            message += `_Enviado desde Gestión de Taller OT_`;
 
             const encodedMsg = encodeURIComponent(message);
             const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`;
             window.open(waUrl, '_blank');
         }
+
+        // --- Vista Pública de la Orden para Clientes ---
+        async function showPublicOrderView(orderId) {
+            // Ocultar contenedores de la app privada
+            authContainer.classList.add('hidden');
+            appContainer.classList.add('hidden');
+            
+            const publicContainer = document.getElementById('public-container');
+            publicContainer.classList.remove('hidden');
+            
+            try {
+                // Consultar la orden a Supabase por ID
+                const { data: order, error } = await supabaseClient
+                    .from('work_orders')
+                    .select('*')
+                    .eq('id', orderId)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (!order) {
+                    showPublicError("No se encontró la orden de trabajo especificada.");
+                    return;
+                }
+                
+                // Rellenar datos en la vista pública
+                document.getElementById('pub-order-number').textContent = `Orden #${order.order_number}`;
+                
+                const statusEl = document.getElementById('pub-order-status');
+                statusEl.textContent = order.status;
+                if (order.status === 'Finalizada') {
+                    statusEl.className = "px-3.5 py-2 rounded-full text-xs sm:text-sm font-bold shadow-sm bg-green-100 text-green-800 border border-green-200";
+                    document.getElementById('pub-finalizacion-section').classList.remove('hidden');
+                    document.getElementById('pub-monto').textContent = `$ ${order.monto_cobrado}`;
+                    if (order.notas_extra) {
+                        document.getElementById('pub-notas-container').classList.remove('hidden');
+                        document.getElementById('pub-notas').textContent = order.notas_extra;
+                    } else {
+                        document.getElementById('pub-notas-container').classList.add('hidden');
+                    }
+                } else {
+                    statusEl.className = "px-3.5 py-2 rounded-full text-xs sm:text-sm font-bold shadow-sm bg-amber-100 text-amber-800 border border-amber-200";
+                    document.getElementById('pub-finalizacion-section').classList.add('hidden');
+                }
+                
+                document.getElementById('pub-vehiculo').textContent = order.vehiculo;
+                document.getElementById('pub-dominio').textContent = order.dominio;
+                document.getElementById('pub-cliente').textContent = order.nombre;
+                document.getElementById('pub-fecha').textContent = new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+                document.getElementById('pub-trabajos').innerHTML = order.novedades.replace(/\n/g, '<br>');
+                
+                // Actualizar checks de adicionales
+                updatePubCheck('pub-garantia', order.garantia, 'Garantía');
+                updatePubCheck('pub-oblea', order.oblea, 'Oblea');
+                updatePubCheck('pub-ph', order.ph, 'PH');
+                updatePubCheck('pub-nv', order.nv, 'NV');
+                updatePubCheck('pub-retencion', order.retencion, 'Retención');
+                updatePubCheck('pub-mangueras', order.mangueras, 'Mangueras');
+                
+                // Fotos del trabajo
+                const galeriaSec = document.getElementById('pub-galeria-section');
+                const galeria = document.getElementById('pub-galeria');
+                galeria.innerHTML = '';
+                
+                if (order.fotos && order.fotos.length > 0) {
+                    galeriaSec.classList.remove('hidden');
+                    order.fotos.forEach((f) => {
+                        const div = document.createElement('div');
+                        div.className = "relative aspect-square overflow-hidden rounded-xl border border-gray-100 shadow-sm group cursor-zoom-in";
+                        div.onclick = () => openLightbox(f);
+                        div.innerHTML = `
+                            <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
+                        `;
+                        galeria.appendChild(div);
+                    });
+                } else {
+                    galeriaSec.classList.add('hidden');
+                }
+                
+            } catch (err) {
+                console.error("Error cargando orden pública:", err);
+                showPublicError(`No se pudo cargar la orden. Asegúrate de tener conexión a Internet o de que la orden exista.<br><br><span class="text-xs text-gray-400">Detalles: ${err.message}</span>`);
+            }
+        }
+        
+        function updatePubCheck(id, value, label) {
+            const el = document.getElementById(id);
+            if (value) {
+                el.className = "flex items-center text-sm text-indigo-700 font-bold";
+                el.innerHTML = `<i class="fas fa-check-circle text-indigo-600 mr-2"></i> ${label}`;
+            } else {
+                el.className = "flex items-center text-sm text-gray-400 font-normal";
+                el.innerHTML = `<i class="far fa-circle mr-2 text-gray-300"></i> ${label}`;
+            }
+        }
+        
+        function showPublicError(msg) {
+            const publicContainer = document.getElementById('public-container');
+            publicContainer.innerHTML = `
+                <div class="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl shadow-xl border border-gray-100 text-center space-y-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-600 text-2xl mb-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800">Error de Acceso</h2>
+                    <p class="text-gray-600 leading-relaxed">${msg}</p>
+                    <a href="index.html" class="inline-block mt-4 bg-indigo-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all text-sm">
+                        Ir al Inicio
+                    </a>
+                </div>
+            `;
+        }
+
 
         function printWorkOrder(order) {
             const printWindow = window.open('', '_blank', 'height=600,width=800');
@@ -783,8 +1162,14 @@
             }
         }
 
-        checkUser();
-        document.getElementById('fecha').valueAsDate = new Date();
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderIdParam = urlParams.get('id');
+        if (orderIdParam) {
+            showPublicOrderView(orderIdParam);
+        } else {
+            checkUser();
+            document.getElementById('fecha').valueAsDate = new Date();
+        }
 
         // Registro de Service Worker para PWA
         if ('serviceWorker' in navigator) {
