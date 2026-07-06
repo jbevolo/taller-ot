@@ -18,7 +18,9 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Contenedor de Autenticación -->
+    <!-- ==================== CONTENEDOR DE AUTENTICACIÓN ==================== -->
+    <!-- Formulario de login/registro. Se muestra cuando no hay sesión activa. -->
+    <!-- Supabase Auth maneja email + contraseña con verificación por correo. -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
             <h2 id="auth-title" class="text-2xl font-bold text-center text-gray-800 mb-6">Iniciar Sesión (Online)</h2>
@@ -44,7 +46,10 @@
         </div>
     </div>
 
-    <!-- Contenedor de Vista Pública (para el Cliente) -->
+    <!-- ==================== CONTENEDOR VISTA PÚBLICA (CLIENTES) ==================== -->
+    <!-- Vista de solo lectura para que los clientes vean su orden de trabajo. -->
+    <!-- Se activa con el parámetro ?id=<orden> en la URL (sin autenticación). -->
+    <!-- Muestra: estado, vehículo, trabajos, fotos, checks, y finalización. -->
     <div id="public-container" class="hidden min-h-screen bg-gray-50 text-gray-800 pb-12">
         <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
@@ -145,7 +150,10 @@
         </div>
     </div>
 
-    <!-- Contenedor Principal de la Aplicación -->
+    <!-- ==================== CONTENEDOR PRINCIPAL DE LA APLICACIÓN ==================== -->
+    <!-- Panel administrativo del taller. Requiere autenticación. -->
+    <!-- Layout: formulario de nueva orden (izquierda) + tabla de órdenes (derecha). -->
+    <!-- Incluye: backup/restore, búsqueda, y acciones por orden. -->
     <div id="app-container" class="hidden">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8">
             <header class="flex justify-between items-center mb-8">
@@ -288,13 +296,17 @@
                                 </tbody>
                             </table>
                         </div>
+                        <!-- Controles de paginación -->
+                        <div id="pagination-controls" class="hidden mt-4 pt-4 border-t border-gray-200 px-2 pb-2">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modales -->
+    <!-- ==================== MODALES ==================== -->
+    <!-- Modal de notificaciones (éxito/error/confirmación) -->
     <div id="notification-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
         <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
             <p id="notification-message" class="text-gray-800"></p>
@@ -302,6 +314,7 @@
         </div>
     </div>
 
+    <!-- Modal de detalle de orden (vista completa con fotos y acciones) -->
     <div id="view-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
         <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
@@ -328,13 +341,13 @@
         </div>
     </div>
 
-    <!-- Modal Visor de Imágenes (Lightbox) -->
+    <!-- Modal Visor de Imágenes (Lightbox) - Click para cerrar -->
     <div id="lightbox-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-[60] flex justify-center items-center p-4" onclick="this.classList.add('hidden')">
         <button class="absolute top-4 right-4 text-white text-4xl">&times;</button>
         <img id="lightbox-img" src="" class="max-w-full max-h-full rounded-lg shadow-2xl">
     </div>
 
-    <!-- Modal para Finalizar Orden -->
+    <!-- Modal para Finalizar Orden (registro de cobro y pago) -->
     <div id="complete-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
         <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full">
             <h2 class="text-2xl font-bold mb-4">Finalizar Orden de Trabajo</h2>
@@ -371,29 +384,132 @@
     </div>
 
     <script type="module">
+        /**
+         * ===================================================================
+         * GESTIÓN DE TALLER OT - Aplicación Principal
+         * ===================================================================
+         * 
+         * Sistema de gestión de órdenes de trabajo para talleres mecánicos.
+         * PWA con funcionalidad offline, backend en Supabase.
+         * 
+         * Módulos:
+         *   1. Configuración Supabase
+         *   2. Variables de estado
+         *   3. Selectores DOM
+         *   4. Autenticación (login/register/logout)
+         *   5. Gestión de órdenes (CRUD)
+         *   6. Manejo de fotos y compresión
+         *   7. Guardar orden (upload + BD)
+         *   8. Vista detalle de orden
+         *   9. Compartir WhatsApp
+         *  10. Vista pública para clientes
+         *  11. Impresión de órdenes
+         *  12. Backup y restauración
+         *  13. Sistema de notificaciones
+         *  14. Inicialización y Service Worker
+         * 
+         * @author Taller OT
+         * @version 2.0
+         * @since 2025
+         */
+
         // --- CONFIGURACIÓN SUPABASE ---
+        /**
+         * URL del proyecto Supabase.
+         * @constant {string}
+         */
         const SUPABASE_URL = 'https://ipddfmlhcsivjpkqsmcc.supabase.co';
+
+        /**
+         * Clave pública (anon) de Supabase.
+         * Segura para exposición en frontend (RLS protege los datos).
+         * @constant {string}
+         */
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZGRmbWxoY3Npdmpwa3FzbWNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzI4MDAsImV4cCI6MjA5NDI0ODgwMH0.3UfVW1WUtpV31Kb5Ay4p0IcCSB4SIiATS3LJNL0Bqg8';
         
+        /**
+         * Cliente de Supabase inicializado.
+         * @type {SupabaseClient}
+         */
         const { createClient } = window.supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- Variables de Estado ---
+        // --- VARIABLES DE ESTADO ---
+
+        /**
+         * Usuario actual autenticado en Supabase.
+         * Contiene: id, email, y otros datos de sesión.
+         * @type {Object|null}
+         */
         let currentUser = null;
+
+        /**
+         * Array con todas las órdenes de trabajo del usuario.
+         * Se actualiza con cada fetchOrders().
+         * @type {Array<Object>}
+         */
         let allOrders = [];
+
+        /**
+         * Array temporal de fotos seleccionadas para subir.
+         * Cada elemento: { blob: Blob, name: string }
+         * Se vacía después de guardar la orden.
+         * @type {Array<Object>}
+         */
         let selectedFotosFiles = [];
 
-        // --- Selectores ---
+        // --- VARIABLES DE PAGINACIÓN ---
+
+        /** @type {number} Cantidad máxima de órdenes por página */
+        const ORDERS_PER_PAGE = 50;
+
+        /** @type {number} Página actual visible (inicia en 1) */
+        let currentPage = 1;
+
+        /**
+         * Array de órdenes filtradas por búsqueda.
+         * Si es null, se usa allOrders completo.
+         * @type {Array<Object>|null}
+         */
+        let filteredOrders = null;
+
+        // --- SELECTORES DOM ---
+        // Referencias a elementos del DOM para evitar búsquedas repetidas.
+
+        /** @type {HTMLElement} Contenedor del formulario de autenticación */
         const authContainer = document.getElementById('auth-container');
+
+        /** @type {HTMLElement} Contenedor principal de la aplicación */
         const appContainer = document.getElementById('app-container');
+
+        /** @type {HTMLElement} Elemento que muestra el email del usuario */
         const userDisplay = document.getElementById('user-display');
+
+        /** @type {HTMLElement} Cuerpo de la tabla de órdenes */
         const tableBody = document.getElementById('orders-table-body');
+
+        /** @type {HTMLFormElement} Formulario de nueva orden de trabajo */
         const workOrderForm = document.getElementById('work-order-form');
+
+        /** @type {HTMLInputElement} Campo de número de orden (auto-generado) */
         const orderNumberInput = document.getElementById('order-number');
+
+        /** @type {HTMLInputElement} Input de selección de fotos */
         const fotosInput = document.getElementById('fotos-input');
+
+        /** @type {HTMLElement} Contenedor de previews de fotos */
         const fotosPreview = document.getElementById('fotos-preview');
 
-        // --- Lógica de Autenticación ---
+        // --- LÓGICA DE AUTENTICACIÓN ---
+
+        /**
+         * Verifica si hay una sesión activa de Supabase.
+         * Si el usuario está autenticado, muestra la app y carga las órdenes.
+         * Si no, muestra el formulario de login.
+         * @async
+         * @function checkUser
+         * @returns {Promise<void>}
+         */
         async function checkUser() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (user) {
@@ -409,6 +525,12 @@
             }
         }
 
+        // --- EVENT LISTENERS: AUTENTICACIÓN ---
+
+        /**
+         * Login con email y contraseña vía Supabase Auth.
+         * Valida campos, ejecuta signInWithPassword, y actualiza la vista.
+         */
         document.getElementById('login-btn').addEventListener('click', async () => {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
@@ -423,6 +545,10 @@
             else checkUser();
         });
 
+        /**
+         * Registro de nueva cuenta vía Supabase Auth.
+         * Envía email de confirmación al usuario antes de permitir login.
+         */
         document.getElementById('register-btn').addEventListener('click', async () => {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
@@ -440,12 +566,51 @@
             }
         });
 
+        /**
+         * Enter en campo contraseña -> ejecuta login automáticamente.
+         */
+        document.getElementById('password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('login-btn').click();
+            }
+        });
+
+        /**
+         * Enter en campo email -> mueve foco al campo contraseña.
+         */
+        document.getElementById('email').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('password').focus();
+            }
+        });
+
+        /**
+         * Previene submit nativo del form de auth (evita recarga de página).
+         */
+        document.getElementById('auth-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+        });
+
+        /**
+         * Logout: cierra sesión en Supabase y vuelve a la pantalla de login.
+         */
         document.getElementById('logout-btn').addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
             checkUser();
         });
 
-        // --- Gestión de Órdenes ---
+        // --- GESTIÓN DE ÓRDENES ---
+
+        /**
+         * Obtiene todas las órdenes de trabajo del usuario desde Supabase.
+         * Actualiza la variable global allOrders, renderiza la tabla
+         * y establece el siguiente número de orden disponible.
+         * @async
+         * @function fetchOrders
+         * @returns {Promise<void>}
+         */
         async function fetchOrders() {
             const { data, error } = await supabaseClient
                 .from('work_orders')
@@ -457,18 +622,54 @@
                 showNotification("Error cargando órdenes.");
             } else {
                 allOrders = data;
-                renderOrders(data);
+                // Resetear paginación y filtros al cargar datos frescos
+                currentPage = 1;
+                filteredOrders = null;
+                // Limpiar campo de búsqueda
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) searchInput.value = '';
+                
+                renderOrders();
                 setNextOrderNumber();
             }
         }
 
+        /**
+         * Renderiza la tabla de órdenes en el DOM con paginación.
+         * Genera filas dinámicas con acciones: ver, WhatsApp, finalizar, imprimir, eliminar.
+         * Muestra indicador de fotos y badge de estado (Abierta/Finalizada).
+         * Paginación: muestra ORDERS_PER_PAGE órdenes por página.
+         * @function renderOrders
+         * @param {Array<Object>} [orders] - Array de órdenes (opcional, usa filteredOrders o allOrders si no se provee)
+         */
         function renderOrders(orders) {
+            // Determinar qué órdenes usar
+            const sourceOrders = orders || filteredOrders || allOrders;
+
+            // Calcular paginación
+            const totalOrders = sourceOrders.length;
+            const totalPages = Math.ceil(totalOrders / ORDERS_PER_PAGE);
+
+            // Ajustar currentPage si es necesario
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * ORDERS_PER_PAGE;
+            const end = start + ORDERS_PER_PAGE;
+            const pageOrders = sourceOrders.slice(start, end);
+
             tableBody.innerHTML = '';
-            if (orders.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No hay órdenes registradas.</td></tr>`;
+
+            if (totalOrders === 0) {
+                const message = filteredOrders ? 'No se encontraron órdenes con ese criterio.' : 'No hay órdenes registradas.';
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-500">${message}</td></tr>`;
+                renderPagination(0, 0);
                 return;
             }
-            orders.forEach(order => {
+
+            pageOrders.forEach(order => {
                 const tr = document.createElement('tr');
                 const statusColor = order.status === 'Finalizada' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
                 const hasFotos = order.fotos && order.fotos.length > 0;
@@ -502,14 +703,159 @@
                 tr.querySelector('.delete-btn').onclick = () => deleteOrder(order.id, order.order_number);
                 tableBody.appendChild(tr);
             });
+
+            renderPagination(totalOrders, totalPages);
         }
 
+        /**
+         * Renderiza los controles de paginación debajo de la tabla.
+         * Muestra botones Anterior/Siguiente e indicador de página.
+         * @function renderPagination
+         * @param {number} totalOrders - Total de órdenes (filtradas o todas)
+         * @param {number} totalPages - Total de páginas calculadas
+         * @returns {void}
+         */
+        function renderPagination(totalOrders, totalPages) {
+            const container = document.getElementById('pagination-controls');
+            if (!container) return;
+
+            if (totalOrders === 0) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            const start = (currentPage - 1) * ORDERS_PER_PAGE + 1;
+            const end = Math.min(currentPage * ORDERS_PER_PAGE, totalOrders);
+
+            const isFirstPage = currentPage === 1;
+            const isLastPage = currentPage === totalPages;
+
+            container.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-600">
+                        Mostrando <span class="font-bold">${start}</span> - <span class="font-bold">${end}</span> de <span class="font-bold">${totalOrders}</span> órdenes
+                        ${filteredOrders ? ' (filtradas)' : ''}
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="prev-page-btn" 
+                            class="px-4 py-2 rounded-lg font-bold text-sm transition-colors ${isFirstPage ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}"
+                            ${isFirstPage ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-left mr-1"></i> Anterior
+                        </button>
+                        <span class="px-3 py-2 text-sm font-medium text-gray-700">
+                            Página ${currentPage} de ${totalPages}
+                        </span>
+                        <button id="next-page-btn" 
+                            class="px-4 py-2 rounded-lg font-bold text-sm transition-colors ${isLastPage ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}"
+                            ${isLastPage ? 'disabled' : ''}>
+                            Siguiente <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Event listeners para navegación
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+
+            if (prevBtn && !isFirstPage) {
+                prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+            }
+            if (nextBtn && !isLastPage) {
+                nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
+            }
+        }
+
+        /**
+         * Navega a una página específica y re-renderiza la tabla.
+         * @function goToPage
+         * @param {number} page - Número de página a mostrar
+         * @returns {void}
+         */
+        function goToPage(page) {
+            currentPage = page;
+            renderOrders();
+            // Scroll suave hacia la tabla
+            document.getElementById('db-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // --- BÚSQUEDA DE ÓRDENES ---
+
+        /**
+         * Filtra las órdenes por texto de búsqueda.
+         * Busca en: número de orden, nombre del cliente, vehículo, dominio.
+         * Actualiza filteredOrders y renderiza la primera página de resultados.
+         * @function filterOrders
+         * @param {string} query - Texto de búsqueda
+         * @returns {void}
+         */
+        function filterOrders(query) {
+            const searchTerm = query.trim().toLowerCase();
+
+            if (!searchTerm) {
+                // Si el campo está vacío, mostrar todas las órdenes
+                filteredOrders = null;
+                currentPage = 1;
+                renderOrders();
+                return;
+            }
+
+            // Filtrar órdenes que contengan el término en cualquier campo relevante
+            filteredOrders = allOrders.filter(order => {
+                const orderNum = String(order.order_number).toLowerCase();
+                const nombre = (order.nombre || '').toLowerCase();
+                const vehiculo = (order.vehiculo || '').toLowerCase();
+                const dominio = (order.dominio || '').toLowerCase();
+                const telefono = (order.telefono || '').toLowerCase();
+
+                return orderNum.includes(searchTerm) ||
+                       nombre.includes(searchTerm) ||
+                       vehiculo.includes(searchTerm) ||
+                       dominio.includes(searchTerm) ||
+                       telefono.includes(searchTerm);
+            });
+
+            // Resetear a primera página con los resultados filtrados
+            currentPage = 1;
+            renderOrders();
+        }
+
+        /**
+         * Event listener para el campo de búsqueda.
+         * Filtra órdenes en tiempo real con debounce de 300ms.
+         */
+        const searchInput = document.getElementById('search-input');
+        let searchTimeout = null;
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    filterOrders(e.target.value);
+                }, 300);
+            });
+        }
+
+        /**
+         * Calcula y establece el siguiente número de orden disponible.
+         * Toma el máximo número existente y suma 1, o inicia en 1 si no hay órdenes.
+         * @function setNextOrderNumber
+         * @returns {void}
+         */
         function setNextOrderNumber() {
             const next = allOrders.length > 0 ? Math.max(...allOrders.map(o => o.order_number)) + 1 : 1;
             orderNumberInput.value = next;
         }
 
         // --- Manejo de Fotos y Compresión ---
+        // --- EVENT LISTENERS: FOTOS ---
+
+        /**
+         * Input de fotos: comprime y agrega archivos seleccionados al array.
+         * Máximo 5 fotos. Cada foto se comprime a ≤1MB antes de agregar.
+         */
         fotosInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
             for (const file of files) {
@@ -520,6 +866,16 @@
             renderFotosPreview();
         });
 
+        // --- MANEJO DE FOTOS Y COMPRESIÓN ---
+
+        /**
+         * Comprime una imagen para storage optimizado.
+         * Resolución máxima: 1920px (HD Premium).
+         * Peso objetivo: < 1MB con calidad progresiva (0.85 → 0.4).
+         * @function compressImage
+         * @param {File} file - Archivo de imagen del input del usuario
+         * @returns {Promise<Blob>} Blob de la imagen comprimida en formato JPEG
+         */
         function compressImage(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -571,6 +927,12 @@
             });
         }
 
+        /**
+         * Renderiza las miniaturas de preview de fotos seleccionadas.
+         * Muestra imagen缩略图 con botón de eliminar para cada foto.
+         * @function renderFotosPreview
+         * @returns {void}
+         */
         function renderFotosPreview() {
             fotosPreview.innerHTML = '';
             selectedFotosFiles.forEach((foto, i) => {
@@ -582,7 +944,17 @@
         }
         window.removeFoto = (i) => { selectedFotosFiles.splice(i, 1); renderFotosPreview(); };
 
-        // --- Guardar Orden ---
+        // --- GUARDAR ORDEN ---
+
+        /**
+         * Maneja el envío del formulario de nueva orden de trabajo.
+         * Flujo: 1) Sube fotos a Supabase Storage, 2) Inserta orden en BD.
+         * Actualiza la tabla y resetea el formulario al completar.
+         * @async
+         * @function saveOrder
+         * @param {Event} e - Evento submit del formulario
+         * @returns {Promise<void>}
+         */
         workOrderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const saveBtn = document.getElementById('save-btn');
@@ -646,6 +1018,15 @@
             }
         });
 
+        /**
+         * Elimina una orden de trabajo de Supabase con confirmación.
+         * Muestra modal de confirmación antes de proceder.
+         * @async
+         * @function deleteOrder
+         * @param {string} id - UUID de la orden en Supabase
+         * @param {number} num - Número de orden (para mostrar en confirmación)
+         * @returns {Promise<void>}
+         */
         async function deleteOrder(id, num) {
             showNotification(`¿Eliminar orden #${num} de la nube?`, true, async () => {
                 const { error } = await supabaseClient.from('work_orders').delete().eq('id', id);
@@ -654,6 +1035,18 @@
             });
         }
 
+        /**
+         * Abre el modal de detalle completo de una orden.
+         * Muestra: datos del cliente, vehículo, trabajos, checks,
+         * galería de fotos con lightbox, y detalles de finalización si aplica.
+         * Permite añadir más fotos y compartir por WhatsApp.
+         * @function viewOrder
+         * @param {Object} order - Objeto orden completo desde Supabase
+         * @param {string} order.id - UUID de la orden
+         * @param {number} order.order_number - Número de orden
+         * @param {string} order.status - Estado actual
+         * @param {string[]} order.fotos - Array de URLs de fotos
+         */
         function viewOrder(order) {
             const modal = document.getElementById('view-order-modal');
             const content = document.getElementById('view-order-content');
@@ -680,7 +1073,7 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             ${order.fotos.map((f, i) => `
                                 <div class="relative aspect-square overflow-hidden rounded-lg border shadow-sm group">
-                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 cursor-zoom-in" onclick="openLightbox('${f}')">
+                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 cursor-zoom-in" onclick="openLightbox('${f}', event)">
                                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all pointer-events-none"></div>
                                     <button onclick="deleteSpecificPhoto('${order.id}', '${f}', ${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity" title="Borrar Foto">
                                         <i class="fas fa-trash-alt text-xs"></i>
@@ -731,6 +1124,16 @@
         }
 
         let morePhotosToUpload = [];
+        /**
+         * Configura la funcionalidad de añadir fotos adicionales a una orden.
+         * Permite seleccionar, comprimir y subir fotos nuevas, actualizando
+         * el array de fotos existente en la BD.
+         * @function setupAddMorePhotos
+         * @param {Object} order - Objeto orden al que se añadirán fotos
+         * @param {string} order.id - UUID de la orden
+         * @param {string[]} order.fotos - Array actual de URLs de fotos
+         * @returns {void}
+         */
         function setupAddMorePhotos(order) {
             const input = document.getElementById('add-more-fotos-input');
             const preview = document.getElementById('add-more-preview');
@@ -798,6 +1201,17 @@
             };
         }
 
+        /**
+         * Elimina una foto específica de una orden.
+         * Flujo: 1) Actualiza array en BD, 2) Elimina archivo de Storage.
+         * Muestra confirmación antes de proceder.
+         * @async
+         * @function deleteSpecificPhoto
+         * @param {string} orderId - UUID de la orden
+         * @param {string} photoUrl - URL pública de la foto a eliminar
+         * @param {number} index - Índice de la foto en el array
+         * @returns {Promise<void>}
+         */
         async function deleteSpecificPhoto(orderId, photoUrl, index) {
             showNotification("¿Estás seguro de que deseas eliminar esta foto permanentemente?", true, async () => {
                 try {
@@ -836,15 +1250,36 @@
         }
         window.deleteSpecificPhoto = deleteSpecificPhoto;
 
-        function openLightbox(url) {
+        /**
+         * Abre el visor de imágenes en pantalla completa (lightbox).
+         * Muestra la imagen seleccionada con fondo oscuro.
+         * Se cierra haciendo clic en el fondo o en el botón X.
+         * @function openLightbox
+         * @param {string} url - URL de la imagen a mostrar
+         * @param {Event} [e] - Evento click (opcional, para stopPropagation)
+         * @returns {void}
+         */
+        function openLightbox(url, e) {
             const lb = document.getElementById('lightbox-modal');
             const img = document.getElementById('lightbox-img');
             img.src = url;
             lb.classList.remove('hidden');
-            event.stopPropagation();
+            if (e) e.stopPropagation();
         }
         window.openLightbox = openLightbox;
 
+        /**
+         * Abre el modal de finalización de orden de trabajo.
+         * Carga los datos existentes de la orden para edición.
+         * Permite registrar monto cobrado, forma de pago y notas.
+         * @function openCompleteModal
+         * @param {Object} order - Objeto orden a finalizar
+         * @param {string} order.id - UUID de la orden
+         * @param {number} [order.monto_cobrado] - Monto ya registrado
+         * @param {string} [order.forma_pago] - Forma de pago ya registrada
+         * @param {string} [order.notas_extra] - Notas ya registradas
+         * @returns {void}
+         */
         function openCompleteModal(order) {
             document.getElementById('complete-order-id').value = order.id;
             document.getElementById('monto-cobrado').value = order.monto_cobrado || '';
@@ -853,6 +1288,12 @@
             document.getElementById('complete-order-modal').classList.remove('hidden');
         }
 
+        // --- EVENT LISTENERS: FORMULARIO DE FINALIZACIÓN ---
+
+        /**
+         * Submit del form de finalización: actualiza orden con estado 'Finalizada',
+         * monto cobrado, forma de pago y notas adicionales.
+         */
         document.getElementById('complete-order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('complete-order-id').value;
@@ -885,7 +1326,27 @@
             submitBtn.innerHTML = `Guardar Finalización`;
         });
 
-        // --- Compartir WhatsApp ---
+        // --- COMPARTIR WHATSAPP ---
+
+        /**
+         * Genera un link de WhatsApp con el resumen de la orden.
+         * Incluye: estado, trabajos, monto (si finalizada), y link al
+         * portal digital del cliente para ver fotos y detalles completos.
+         * @function shareViaWhatsApp
+         * @param {Object} order - Objeto orden a compartir
+         * @param {string} order.telefono - Teléfono del cliente (se limpia a dígitos)
+         * @param {string} order.nombre - Nombre del cliente
+         * @param {string} order.vehiculo - Descripción del vehículo
+         * @param {string} order.dominio - Patente del vehículo
+         * @param {number} order.order_number - Número de orden
+         * @param {string} order.status - Estado de la orden
+         * @param {string} order.novedades - Trabajos a realizar
+         * @param {number} [order.monto_cobrado] - Monto cobrado (si finalizada)
+         * @param {string} [order.forma_pago] - Forma de pago
+         * @param {string} [order.notas_extra] - Notas adicionales
+         * @param {string[]} [order.fotos] - URLs de fotos del trabajo
+         * @returns {void}
+         */
         function shareViaWhatsApp(order) {
             const phone = order.telefono ? order.telefono.replace(/\D/g, '') : '';
             const fotosArray = Array.isArray(order.fotos) ? order.fotos : (order.fotos ? [order.fotos] : []);
@@ -915,7 +1376,18 @@
             window.open(waUrl, '_blank');
         }
 
-        // --- Vista Pública de la Orden para Clientes ---
+        // --- VISTA PÚBLICA DE LA ORDEN PARA CLIENTES ---
+
+        /**
+         * Muestra la vista pública de una orden para el cliente.
+         * Se activa con el parámetro ?id=<orden> en la URL.
+         * No requiere autenticación. Muestra: datos del vehículo, cliente,
+         * trabajos, checks, galería de fotos, y detalles de finalización.
+         * @async
+         * @function showPublicOrderView
+         * @param {string} orderId - UUID de la orden a consultar
+         * @returns {Promise<void>}
+         */
         async function showPublicOrderView(orderId) {
             // Ocultar contenedores de la app privada
             authContainer.classList.add('hidden');
@@ -984,7 +1456,7 @@
                     order.fotos.forEach((f) => {
                         const div = document.createElement('div');
                         div.className = "relative aspect-square overflow-hidden rounded-xl border border-gray-100 shadow-sm group cursor-zoom-in";
-                        div.onclick = () => openLightbox(f);
+                        div.onclick = (e) => openLightbox(f, e);
                         div.innerHTML = `
                             <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                             <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
@@ -1001,6 +1473,15 @@
             }
         }
         
+        /**
+         * Actualiza el estado visual de un checkbox en la vista pública.
+         * Cambia ícono y estilo según el valor booleano.
+         * @function updatePubCheck
+         * @param {string} id - ID del elemento DOM a actualizar
+         * @param {boolean} value - Valor del check (true/false)
+         * @param {string} label - Texto descriptivo del check
+         * @returns {void}
+         */
         function updatePubCheck(id, value, label) {
             const el = document.getElementById(id);
             if (value) {
@@ -1012,6 +1493,13 @@
             }
         }
         
+        /**
+         * Muestra pantalla de error en la vista pública del cliente.
+         * Se usa cuando la orden no existe o hay problemas de conexión.
+         * @function showPublicError
+         * @param {string} msg - Mensaje de error a mostrar (admite HTML)
+         * @returns {void}
+         */
         function showPublicError(msg) {
             const publicContainer = document.getElementById('public-container');
             publicContainer.innerHTML = `
@@ -1029,6 +1517,27 @@
         }
 
 
+        /**
+         * Genera una ventana de impresión con formato de documento oficial.
+         * Incluye: encabezado, datos del cliente/vehículo, trabajos,
+         * checks, y espacios de firma. Usa Tailwind CSS para estilos.
+         * @function printWorkOrder
+         * @param {Object} order - Objeto orden a imprimir
+         * @param {number|string} order.order_number - Número de orden
+         * @param {string} order.fecha - Fecha de ingreso
+         * @param {string} order.nombre - Nombre del cliente
+         * @param {string} [order.telefono] - Teléfono del cliente
+         * @param {string} order.vehiculo - Descripción del vehículo
+         * @param {string} order.dominio - Patente del vehículo
+         * @param {string} order.novedades - Trabajos a realizar
+         * @param {boolean} order.garantia - Check de garantía
+         * @param {boolean} order.oblea - Check de oblea
+         * @param {boolean} order.ph - Check de PH
+         * @param {boolean} order.nv - Check de NV
+         * @param {boolean} order.retencion - Check de retención
+         * @param {boolean} order.mangueras - Check de mangueras
+         * @returns {void}
+         */
         function printWorkOrder(order) {
             const printWindow = window.open('', '_blank', 'height=600,width=800');
             printWindow.document.write('<html><head><title>Orden de Trabajo</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:sans-serif} @media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div id="print-area">');
@@ -1067,6 +1576,12 @@
             setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
         }
 
+        // --- EVENT LISTENERS: IMPRESIÓN ---
+
+        /**
+         * Botón "Imprimir Borrador": genera vista de impresión con los datos
+         * actualmente ingresados en el formulario (sin guardar en BD).
+         */
         document.getElementById('print-draft-btn').addEventListener('click', () => {
             const draft = {
                 order_number: orderNumberInput.value ? `${orderNumberInput.value} (Borrador)` : "Borrador",
@@ -1092,6 +1607,11 @@
         const restoreBtn = document.getElementById('restore-btn');
         const restoreInput = document.getElementById('restore-input');
 
+        // --- EVENT LISTENERS: BACKUP/RESTORE ---
+
+        /**
+         * Botón Backup: exporta todas las órdenes como archivo JSON descargable.
+         */
         backupBtn.addEventListener('click', () => {
             if (allOrders.length === 0) return showNotification("No hay datos para exportar.");
             
@@ -1107,8 +1627,15 @@
             showNotification("Backup exportado con éxito.");
         });
 
+        /**
+         * Botón Restore: abre selector de archivo para importar backup JSON.
+         */
         restoreBtn.addEventListener('click', () => restoreInput.click());
         
+        /**
+         * Input de restore: lee el archivo JSON seleccionado, valida formato,
+         * y muestra confirmación antes de reemplazar datos en la nube.
+         */
         restoreInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -1131,6 +1658,18 @@
             restoreInput.value = '';
         });
 
+        // --- BACKUP Y RESTAURACIÓN ---
+
+        /**
+         * Restaura un backup de órdenes a Supabase.
+         * Flujo: 1) Borra todas las órdenes actuales del usuario,
+         * 2) Inserta las órdenes del archivo JSON.
+         * Muestra progreso y resultado al usuario.
+         * @async
+         * @function restoreToCloud
+         * @param {Array<Object>} data - Array de órdenes desde el archivo JSON
+         * @returns {Promise<void>}
+         */
         async function restoreToCloud(data) {
             showNotification("Restaurando datos en la nube... Por favor espera.");
             try {
@@ -1163,7 +1702,18 @@
             }
         }
 
-        // --- Notificaciones ---
+        // --- NOTIFICACIONES ---
+
+        /**
+         * Sistema de notificaciones modales personalizado.
+         * Modo simple: muestra mensaje con botón OK.
+         * Modo confirmación: muestra mensaje con botones Confirmar/Cancelar.
+         * @function showNotification
+         * @param {string} msg - Mensaje a mostrar (admite HTML)
+         * @param {boolean} [isConfirm=false] - Si true, muestra botones de confirmación
+         * @param {Function|null} [callback=null] - Función a ejecutar al confirmar
+         * @returns {void}
+         */
         function showNotification(msg, isConfirm = false, callback = null) {
             const modal = document.getElementById('notification-modal');
             const message = document.getElementById('notification-message');
@@ -1184,6 +1734,15 @@
             }
         }
 
+        // --- INICIALIZACIÓN DE LA APLICACIÓN ---
+
+        /**
+         * Punto de entrada de la aplicación.
+         * Verifica si hay parámetro ?id= en URL:
+         *   - Si existe: muestra vista pública del cliente (sin auth)
+         *   - Si no: verifica sesión activa y muestra panel administrativo
+         * También establece la fecha actual en el formulario.
+         */
         const urlParams = new URLSearchParams(window.location.search);
         const orderIdParam = urlParams.get('id');
         if (orderIdParam) {
@@ -1193,7 +1752,10 @@
             document.getElementById('fecha').valueAsDate = new Date();
         }
 
-        // Registro de Service Worker para PWA
+        /**
+         * Registro del Service Worker para funcionalidad PWA.
+         * Permite caching de assets y uso offline de la aplicación.
+         */
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
