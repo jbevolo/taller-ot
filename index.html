@@ -948,34 +948,36 @@
         }
 
         // Event listeners: Botones del modal de selección de cámara
+        // Se usan onclick (no addEventListener) para evitar doble ejecución
+        // cuando setupCameraModalForAddMore los reasigna.
         const cameraBackBtn = document.getElementById('camera-back-btn');
         const cameraFrontBtn = document.getElementById('camera-front-btn');
         const cameraGalleryBtn = document.getElementById('camera-gallery-btn');
         const cameraCancelBtn = document.getElementById('camera-cancel-btn');
 
         if (cameraBackBtn) {
-            cameraBackBtn.addEventListener('click', () => {
+            cameraBackBtn.onclick = () => {
                 closeCameraSelectModal();
                 fotosInputBack.click();
-            });
+            };
         }
 
         if (cameraFrontBtn) {
-            cameraFrontBtn.addEventListener('click', () => {
+            cameraFrontBtn.onclick = () => {
                 closeCameraSelectModal();
                 fotosInputFront.click();
-            });
+            };
         }
 
         if (cameraGalleryBtn) {
-            cameraGalleryBtn.addEventListener('click', () => {
+            cameraGalleryBtn.onclick = () => {
                 closeCameraSelectModal();
                 fotosInputGallery.click();
-            });
+            };
         }
 
         if (cameraCancelBtn) {
-            cameraCancelBtn.addEventListener('click', closeCameraSelectModal);
+            cameraCancelBtn.onclick = closeCameraSelectModal;
         }
 
         // Event listeners: Cuando se seleccionan fotos desde cualquier input
