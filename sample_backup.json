@@ -1,0 +1,15 @@
+[
+  {
+    "orderNumber": 100,
+    "fecha": "2026-05-13",
+    "nombre": "Prueba de Restauración",
+    "telefono": "12345678",
+    "vehiculo": "Camioneta Test",
+    "dominio": "RES-555",
+    "novedades": "Esta orden fue cargada desde un archivo de backup para probar la funcionalidad local.",
+    "garantia": true,
+    "createdAt": "2026-05-13T14:50:00.000Z",
+    "status": "Abierta",
+    "id": "test-restore-id"
+  }
+]

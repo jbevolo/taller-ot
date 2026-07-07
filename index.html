@@ -244,13 +244,12 @@
                             <div class="pt-4 border-t">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Fotos del Trabajo</label>
                                 <div class="flex items-center justify-center w-full">
-                                    <label for="fotos-input" class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                    <div id="open-camera-modal" class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                                         <div class="flex flex-col items-center justify-center">
                                             <i class="fas fa-camera text-xl text-gray-400"></i>
                                             <p class="text-xs text-gray-500 mt-1">Subir Fotos (Máx 5)</p>
                                         </div>
-                                        <input id="fotos-input" type="file" class="hidden" multiple accept="image/*" />
-                                    </label>
+                                    </div>
                                 </div>
                                 <div id="fotos-preview" class="grid grid-cols-5 gap-1 mt-2"></div>
                             </div>
@@ -314,6 +313,44 @@
         </div>
     </div>
 
+    <!-- Modal de selección de cámara/fuente de fotos -->
+    <div id="camera-select-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Seleccionar Fuente de Foto</h3>
+            <div class="space-y-3">
+                <button id="camera-back-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                    <span class="text-2xl">📷</span>
+                    <div class="text-left">
+                        <p class="font-bold text-gray-800">Cámara Trasera</p>
+                        <p class="text-xs text-gray-500">Principal - Para fotos del trabajo</p>
+                    </div>
+                </button>
+                <button id="camera-front-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                    <span class="text-2xl">🤳</span>
+                    <div class="text-left">
+                        <p class="font-bold text-gray-800">Cámara Frontal</p>
+                        <p class="text-xs text-gray-500">Selfie - Para documentación</p>
+                    </div>
+                </button>
+                <button id="camera-gallery-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                    <span class="text-2xl">🖼️</span>
+                    <div class="text-left">
+                        <p class="font-bold text-gray-800">Galería de Fotos</p>
+                        <p class="text-xs text-gray-500">Seleccionar imagen existente</p>
+                    </div>
+                </button>
+            </div>
+            <button id="camera-cancel-btn" class="w-full mt-4 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <!-- Inputs de cámara ocultos (uno por cada fuente) -->
+    <input type="file" id="fotos-input-back" accept="image/*" capture="environment" class="hidden" multiple>
+    <input type="file" id="fotos-input-front" accept="image/*" capture="user" class="hidden" multiple>
+    <input type="file" id="fotos-input-gallery" accept="image/*" class="hidden" multiple>
+
     <!-- Modal de detalle de orden (vista completa con fotos y acciones) -->
     <div id="view-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
         <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -329,10 +366,16 @@
             </div>
             <div id="add-photos-section" class="mt-6 pt-4 border-t hidden">
                 <label class="block text-sm font-medium text-gray-700 mb-2 font-bold">Añadir más fotos a esta orden</label>
-                <input type="file" id="add-more-fotos-input" class="hidden" multiple accept="image/*">
-                <button type="button" onclick="document.getElementById('add-more-fotos-input').click()" class="bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded-lg hover:bg-indigo-200 w-full flex justify-center items-center">
-                    <i class="fas fa-plus-circle mr-2"></i> Seleccionar Fotos Nuevas
-                </button>
+                <!-- Inputs ocultos para cada fuente de cámara -->
+                <input type="file" id="add-more-input-back" class="hidden" accept="image/*" capture="environment" multiple>
+                <input type="file" id="add-more-input-front" class="hidden" accept="image/*" capture="user" multiple>
+                <input type="file" id="add-more-input-gallery" class="hidden" accept="image/*" multiple>
+                <!-- Botón que abre el modal de selección -->
+                <div id="open-add-more-camera-modal" class="w-full">
+                    <button type="button" class="bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded-lg hover:bg-indigo-200 w-full flex justify-center items-center">
+                        <i class="fas fa-plus-circle mr-2"></i> Seleccionar Fotos Nuevas
+                    </button>
+                </div>
                 <div id="add-more-preview" class="grid grid-cols-5 gap-1 mt-2"></div>
                 <button id="upload-more-btn" class="hidden w-full mt-2 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">
                     Confirmar Subida
@@ -494,8 +537,14 @@
         /** @type {HTMLInputElement} Campo de número de orden (auto-generado) */
         const orderNumberInput = document.getElementById('order-number');
 
-        /** @type {HTMLInputElement} Input de selección de fotos */
-        const fotosInput = document.getElementById('fotos-input');
+        /** @type {HTMLInputElement} Input de cámara trasera */
+        const fotosInputBack = document.getElementById('fotos-input-back');
+
+        /** @type {HTMLInputElement} Input de cámara frontal */
+        const fotosInputFront = document.getElementById('fotos-input-front');
+
+        /** @type {HTMLInputElement} Input de galería de fotos */
+        const fotosInputGallery = document.getElementById('fotos-input-gallery');
 
         /** @type {HTMLElement} Contenedor de previews de fotos */
         const fotosPreview = document.getElementById('fotos-preview');
@@ -852,18 +901,102 @@
         // --- Manejo de Fotos y Compresión ---
         // --- EVENT LISTENERS: FOTOS ---
 
+        // --- SELECCIÓN DE CÁMARA/FUENTE DE FOTOS ---
+
         /**
-         * Input de fotos: comprime y agrega archivos seleccionados al array.
-         * Máximo 5 fotos. Cada foto se comprime a ≤1MB antes de agregar.
+         * Abre el modal de selección de cámara/fuente de fotos.
+         * @function openCameraSelectModal
+         * @returns {void}
          */
-        fotosInput.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
-            for (const file of files) {
+        function openCameraSelectModal() {
+            const modal = document.getElementById('camera-select-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        /**
+         * Cierra el modal de selección de cámara.
+         * @function closeCameraSelectModal
+         * @returns {void}
+         */
+        function closeCameraSelectModal() {
+            const modal = document.getElementById('camera-select-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        /**
+         * Procesa los archivos seleccionados de cualquier input de fotos.
+         * Comprime y agrega al array selectedFotosFiles (máx 5).
+         * @async
+         * @function processSelectedFiles
+         * @param {FileList} files - Archivos seleccionados del input
+         * @returns {Promise<void>}
+         */
+        async function processSelectedFiles(files) {
+            const fileArray = Array.from(files);
+            for (const file of fileArray) {
                 if (selectedFotosFiles.length >= 5) break;
                 const compressedBlob = await compressImage(file);
                 selectedFotosFiles.push({ blob: compressedBlob, name: file.name });
             }
             renderFotosPreview();
+        }
+
+        // Event listener: Click en "Subir Fotos" abre el modal
+        const openCameraModal = document.getElementById('open-camera-modal');
+        if (openCameraModal) {
+            openCameraModal.addEventListener('click', openCameraSelectModal);
+        }
+
+        // Event listeners: Botones del modal de selección de cámara
+        const cameraBackBtn = document.getElementById('camera-back-btn');
+        const cameraFrontBtn = document.getElementById('camera-front-btn');
+        const cameraGalleryBtn = document.getElementById('camera-gallery-btn');
+        const cameraCancelBtn = document.getElementById('camera-cancel-btn');
+
+        if (cameraBackBtn) {
+            cameraBackBtn.addEventListener('click', () => {
+                closeCameraSelectModal();
+                fotosInputBack.click();
+            });
+        }
+
+        if (cameraFrontBtn) {
+            cameraFrontBtn.addEventListener('click', () => {
+                closeCameraSelectModal();
+                fotosInputFront.click();
+            });
+        }
+
+        if (cameraGalleryBtn) {
+            cameraGalleryBtn.addEventListener('click', () => {
+                closeCameraSelectModal();
+                fotosInputGallery.click();
+            });
+        }
+
+        if (cameraCancelBtn) {
+            cameraCancelBtn.addEventListener('click', closeCameraSelectModal);
+        }
+
+        // Event listeners: Cuando se seleccionan fotos desde cualquier input
+        fotosInputBack.addEventListener('change', async (e) => {
+            await processSelectedFiles(e.target.files);
+            e.target.value = ''; // Limpiar para poder re-seleccionar
+        });
+
+        fotosInputFront.addEventListener('change', async (e) => {
+            await processSelectedFiles(e.target.files);
+            e.target.value = '';
+        });
+
+        fotosInputGallery.addEventListener('change', async (e) => {
+            await processSelectedFiles(e.target.files);
+            e.target.value = '';
+        });
+
+        // Cerrar modal al hacer clic fuera del contenido
+        document.getElementById('camera-select-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'camera-select-modal') closeCameraSelectModal();
         });
 
         // --- MANEJO DE FOTOS Y COMPRESIÓN ---
@@ -1135,22 +1268,37 @@
          * @returns {void}
          */
         function setupAddMorePhotos(order) {
-            const input = document.getElementById('add-more-fotos-input');
             const preview = document.getElementById('add-more-preview');
             const uploadBtn = document.getElementById('upload-more-btn');
+            const openModalBtn = document.getElementById('open-add-more-camera-modal');
+            
+            // Inputs para esta sección
+            const inputBack = document.getElementById('add-more-input-back');
+            const inputFront = document.getElementById('add-more-input-front');
+            const inputGallery = document.getElementById('add-more-input-gallery');
             
             morePhotosToUpload = [];
             preview.innerHTML = '';
             uploadBtn.classList.add('hidden');
 
-            input.onchange = async (e) => {
-                const files = Array.from(e.target.files);
-                for (const file of files) {
+            // Función para procesar archivos seleccionados
+            async function processAddMoreFiles(files) {
+                const fileArray = Array.from(files);
+                for (const file of fileArray) {
                     const compressed = await compressImage(file);
                     morePhotosToUpload.push({ blob: compressed, name: file.name });
                 }
                 renderMorePhotosPreview();
-            };
+            }
+
+            // Abrir modal de selección de cámara
+            if (openModalBtn) {
+                openModalBtn.onclick = () => {
+                    openCameraSelectModal();
+                    // Configurar event listeners temporales para esta sesión
+                    setupCameraModalForAddMore(inputBack, inputFront, inputGallery, processAddMoreFiles);
+                };
+            }
 
             function renderMorePhotosPreview() {
                 preview.innerHTML = '';
@@ -1199,6 +1347,73 @@
                     uploadBtn.innerHTML = "Confirmar Subida";
                 }
             };
+        }
+
+        /**
+         * Configura el modal de cámara para la sección de "añadir más fotos".
+         * Asocia los botones del modal con los inputs específicos de esta sección.
+         * @function setupCameraModalForAddMore
+         * @param {HTMLInputElement} inputBack - Input de cámara trasera
+         * @param {HTMLInputElement} inputFront - Input de cámara frontal
+         * @param {HTMLInputElement} inputGallery - Input de galería
+         * @param {Function} processFiles - Función para procesar archivos seleccionados
+         * @returns {void}
+         */
+        function setupCameraModalForAddMore(inputBack, inputFront, inputGallery, processFiles) {
+            const backBtn = document.getElementById('camera-back-btn');
+            const frontBtn = document.getElementById('camera-front-btn');
+            const galleryBtn = document.getElementById('camera-gallery-btn');
+            const cancelBtn = document.getElementById('camera-cancel-btn');
+
+            // Guardar event listeners originales
+            const originalBackClick = backBtn?.onclick;
+            const originalFrontClick = frontBtn?.onclick;
+            const originalGalleryClick = galleryBtn?.onclick;
+            const originalCancelClick = cancelBtn?.onclick;
+
+            // Configurar nuevos event listeners
+            if (backBtn) {
+                backBtn.onclick = () => {
+                    closeCameraSelectModal();
+                    inputBack.click();
+                };
+            }
+            if (frontBtn) {
+                frontBtn.onclick = () => {
+                    closeCameraSelectModal();
+                    inputFront.click();
+                };
+            }
+            if (galleryBtn) {
+                galleryBtn.onclick = () => {
+                    closeCameraSelectModal();
+                    inputGallery.click();
+                };
+            }
+            if (cancelBtn) {
+                cancelBtn.onclick = closeCameraSelectModal;
+            }
+
+            // Event listeners para cuando se seleccionan fotos
+            const handleBackChange = async (e) => {
+                await processFiles(e.target.files);
+                e.target.value = '';
+                inputBack.removeEventListener('change', handleBackChange);
+            };
+            const handleFrontChange = async (e) => {
+                await processFiles(e.target.files);
+                e.target.value = '';
+                inputFront.removeEventListener('change', handleFrontChange);
+            };
+            const handleGalleryChange = async (e) => {
+                await processFiles(e.target.files);
+                e.target.value = '';
+                inputGallery.removeEventListener('change', handleGalleryChange);
+            };
+
+            inputBack.addEventListener('change', handleBackChange);
+            inputFront.addEventListener('change', handleFrontChange);
+            inputGallery.addEventListener('change', handleGalleryChange);
         }
 
         /**
