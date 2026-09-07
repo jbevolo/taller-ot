@@ -549,6 +549,103 @@
         /** @type {HTMLElement} Contenedor de previews de fotos */
         const fotosPreview = document.getElementById('fotos-preview');
 
+        // Encode untrusted values only at HTML text/attribute boundaries, never as JavaScript.
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+
+        function safePhotoURL(value) {
+            try {
+                const url = new URL(value);
+                return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
+            } catch {
+                return '';
+            }
+        }
+
+        function createPhotoTile(url, onDelete) {
+            const tile = document.createElement('div');
+            tile.className = 'relative aspect-square overflow-hidden rounded-lg border shadow-sm';
+            const image = document.createElement('img');
+            image.className = 'w-full h-full object-cover cursor-zoom-in';
+            image.alt = 'Foto del trabajo';
+            image.src = safePhotoURL(url);
+            image.onclick = event => openLightbox(image.src, event);
+            tile.appendChild(image);
+            if (onDelete) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6';
+                button.textContent = '×';
+                button.title = 'Borrar foto';
+                button.onclick = onDelete;
+                tile.appendChild(button);
+            }
+            return tile;
+        }
+
+        let sessionEpoch = 0;
+        let authRequest = 0;
+        let ordersRequest = 0;
+        let ordersReady = false;
+
+        function accountContext() {
+            if (!currentUser) throw new Error('La sesión ha cambiado. Inicia sesión nuevamente.');
+            return { id: currentUser.id, epoch: sessionEpoch };
+        }
+
+        function isCurrentAccount(context) {
+            return context && context.epoch === sessionEpoch && context.id === currentUser?.id;
+        }
+
+        function requireCurrentAccount(context) {
+            if (!isCurrentAccount(context)) throw new Error('La sesión ha cambiado. Operación cancelada.');
+        }
+
+        function clearAccountState() {
+            sessionEpoch++;
+            ordersRequest++;
+            currentUser = null;
+            ordersReady = false;
+            allOrders = [];
+            filteredOrders = null;
+            currentPage = 1;
+            selectedFotosFiles = [];
+            morePhotosToUpload = [];
+            photoSelectionEpoch++;
+            clearTimeout(searchTimeout);
+            workOrderForm.reset();
+            document.getElementById('complete-order-form').reset();
+            document.getElementById('fecha').valueAsDate = new Date();
+            orderNumberInput.value = '';
+            userDisplay.textContent = '';
+            document.getElementById('search-input').value = '';
+            document.getElementById('password').value = '';
+            tableBody.innerHTML = '';
+            fotosPreview.innerHTML = '';
+            document.getElementById('add-more-preview').innerHTML = '';
+            document.getElementById('view-order-content').innerHTML = '';
+            document.getElementById('lightbox-img').src = '';
+            document.getElementById('upload-more-btn').onclick = null;
+            for (const [id, label] of [['save-btn', 'Guardar en la Nube'],
+                ['complete-submit-btn', 'Guardar Finalización'], ['upload-more-btn', 'Confirmar Subida']]) {
+                document.getElementById(id).disabled = false;
+                document.getElementById(id).textContent = label;
+            }
+            document.getElementById('view-whatsapp-btn').onclick = null;
+            document.getElementById('modal-buttons').innerHTML = '';
+            document.getElementById('notification-message').textContent = '';
+            renderPagination(0, 0);
+            for (const id of ['view-order-modal', 'complete-order-modal', 'lightbox-modal', 'notification-modal']) {
+                document.getElementById(id).classList.add('hidden');
+            }
+            closeCameraSelectModal();
+            appContainer.classList.add('hidden');
+            authContainer.classList.remove('hidden');
+        }
+
         // --- LÓGICA DE AUTENTICACIÓN ---
 
         /**
@@ -560,17 +657,27 @@
          * @returns {Promise<void>}
          */
         async function checkUser() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (user) {
+            const request = ++authRequest;
+            try {
+                const { data: { user }, error } = await supabaseClient.auth.getUser();
+                if (request !== authRequest) return;
+                if (error) throw error;
+                if (!user) {
+                    clearAccountState();
+                    return;
+                }
+                if (currentUser?.id !== user.id) clearAccountState();
                 currentUser = user;
-                userDisplay.textContent = `Sesión iniciada como: ${user.email}`;
-                authContainer.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                fetchOrders();
-            } else {
-                currentUser = null;
-                authContainer.classList.remove('hidden');
-                appContainer.classList.add('hidden');
+                const context = accountContext();
+                if (await fetchOrders() && isCurrentAccount(context)) {
+                    userDisplay.textContent = `Sesión iniciada como: ${user.email}`;
+                    authContainer.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                }
+            } catch (error) {
+                if (request !== authRequest) return;
+                clearAccountState();
+                showNotification('No se pudo verificar la sesión: ' + error.message);
             }
         }
 
@@ -646,8 +753,14 @@
          * Logout: cierra sesión en Supabase y vuelve a la pantalla de login.
          */
         document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            checkUser();
+            ++authRequest;
+            clearAccountState();
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) throw error;
+            } catch (error) {
+                showNotification('No se pudo cerrar la sesión remota. Inténtalo nuevamente: ' + error.message);
+            }
         });
 
         // --- GESTIÓN DE ÓRDENES ---
@@ -661,16 +774,27 @@
          * @returns {Promise<void>}
          */
         async function fetchOrders() {
-            const { data, error } = await supabaseClient
-                .from('work_orders')
-                .select('*')
-                .order('order_number', { ascending: false });
-            
-            if (error) {
-                console.error(error);
-                showNotification("Error cargando órdenes.");
-            } else {
-                allOrders = data;
+            if (!currentUser) return false;
+            const context = accountContext();
+            const request = ++ordersRequest;
+            ordersReady = false;
+            try {
+                // Fetch every server page so a replacement backup cannot silently omit old rows.
+                const orders = [];
+                const pageSize = 500;
+                for (let offset = 0; ;) {
+                    const { data, error } = await supabaseClient
+                        .from('work_orders').select('*').eq('user_id', context.id)
+                        .order('order_number', { ascending: false }).order('id')
+                        .range(offset, offset + pageSize - 1);
+                    if (!isCurrentAccount(context) || request !== ordersRequest) return false;
+                    if (error) throw error;
+                    orders.push(...data);
+                    if (data.length === 0) break;
+                    offset += data.length;
+                }
+                allOrders = orders;
+                ordersReady = true;
                 // Resetear paginación y filtros al cargar datos frescos
                 currentPage = 1;
                 filteredOrders = null;
@@ -680,6 +804,12 @@
                 
                 renderOrders();
                 setNextOrderNumber();
+                return true;
+            } catch (error) {
+                if (isCurrentAccount(context) && request === ordersRequest) {
+                    showNotification('Error cargando órdenes: ' + error.message);
+                }
+                return false;
             }
         }
 
@@ -721,18 +851,18 @@
             pageOrders.forEach(order => {
                 const tr = document.createElement('tr');
                 const statusColor = order.status === 'Finalizada' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-                const hasFotos = order.fotos && order.fotos.length > 0;
+                const hasFotos = Array.isArray(order.fotos) && order.fotos.length > 0;
                 
                 tr.innerHTML = `
-                    <td class="px-4 py-4 font-bold">#${order.order_number}</td>
-                    <td class="px-4 py-4">${order.fecha}</td>
-                    <td class="px-4 py-4">${order.nombre}</td>
-                    <td class="px-4 py-4">${order.vehiculo}</td>
-                    <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${order.dominio}</span></td>
+                    <td class="px-4 py-4 font-bold">#${escapeHTML(order.order_number)}</td>
+                    <td class="px-4 py-4">${escapeHTML(order.fecha)}</td>
+                    <td class="px-4 py-4">${escapeHTML(order.nombre)}</td>
+                    <td class="px-4 py-4">${escapeHTML(order.vehiculo)}</td>
+                    <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${escapeHTML(order.dominio)}</span></td>
                     <td class="px-4 py-4 text-center">
                         ${hasFotos ? `<i class="fas fa-camera text-indigo-500" title="${order.fotos.length} fotos"></i>` : `<span class="text-gray-300">-</span>`}
                     </td>
-                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">${order.status}</span></td>
+                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">${escapeHTML(order.status)}</span></td>
                     <td class="px-4 py-4 text-sm">
                         <div class="flex items-center space-x-3">
                             <button class="view-btn text-blue-600 hover:text-blue-900" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></button>
@@ -908,7 +1038,11 @@
          * @function openCameraSelectModal
          * @returns {void}
          */
-        function openCameraSelectModal() {
+        let cameraContext = null;
+        let photoSelectionEpoch = 0;
+
+        function openCameraSelectModal(inputs = [fotosInputBack, fotosInputFront, fotosInputGallery]) {
+            cameraContext = inputs;
             const modal = document.getElementById('camera-select-modal');
             if (modal) modal.classList.remove('hidden');
         }
@@ -919,6 +1053,7 @@
          * @returns {void}
          */
         function closeCameraSelectModal() {
+            cameraContext = null;
             const modal = document.getElementById('camera-select-modal');
             if (modal) modal.classList.add('hidden');
         }
@@ -932,10 +1067,14 @@
          * @returns {Promise<void>}
          */
         async function processSelectedFiles(files) {
+            const context = accountContext();
+            const selection = photoSelectionEpoch;
             const fileArray = Array.from(files);
             for (const file of fileArray) {
                 if (selectedFotosFiles.length >= 5) break;
                 const compressedBlob = await compressImage(file);
+                if (!isCurrentAccount(context) || selection !== photoSelectionEpoch) return;
+                if (selectedFotosFiles.length >= 5) break;
                 selectedFotosFiles.push({ blob: compressedBlob, name: file.name });
             }
             renderFotosPreview();
@@ -944,12 +1083,11 @@
         // Event listener: Click en "Subir Fotos" abre el modal
         const openCameraModal = document.getElementById('open-camera-modal');
         if (openCameraModal) {
-            openCameraModal.addEventListener('click', openCameraSelectModal);
+            openCameraModal.addEventListener('click', () => openCameraSelectModal());
         }
 
         // Event listeners: Botones del modal de selección de cámara
-        // Se usan onclick (no addEventListener) para evitar doble ejecución
-        // cuando setupCameraModalForAddMore los reasigna.
+        // Stable callbacks read the current picker context; they are never reassigned by order views.
         const cameraBackBtn = document.getElementById('camera-back-btn');
         const cameraFrontBtn = document.getElementById('camera-front-btn');
         const cameraGalleryBtn = document.getElementById('camera-gallery-btn');
@@ -957,22 +1095,25 @@
 
         if (cameraBackBtn) {
             cameraBackBtn.onclick = () => {
+                const input = cameraContext?.[0];
                 closeCameraSelectModal();
-                fotosInputBack.click();
+                input?.click();
             };
         }
 
         if (cameraFrontBtn) {
             cameraFrontBtn.onclick = () => {
+                const input = cameraContext?.[1];
                 closeCameraSelectModal();
-                fotosInputFront.click();
+                input?.click();
             };
         }
 
         if (cameraGalleryBtn) {
             cameraGalleryBtn.onclick = () => {
+                const input = cameraContext?.[2];
                 closeCameraSelectModal();
-                fotosInputGallery.click();
+                input?.click();
             };
         }
 
@@ -981,20 +1122,17 @@
         }
 
         // Event listeners: Cuando se seleccionan fotos desde cualquier input
-        fotosInputBack.addEventListener('change', async (e) => {
-            await processSelectedFiles(e.target.files);
-            e.target.value = ''; // Limpiar para poder re-seleccionar
-        });
-
-        fotosInputFront.addEventListener('change', async (e) => {
-            await processSelectedFiles(e.target.files);
-            e.target.value = '';
-        });
-
-        fotosInputGallery.addEventListener('change', async (e) => {
-            await processSelectedFiles(e.target.files);
-            e.target.value = '';
-        });
+        for (const input of [fotosInputBack, fotosInputFront, fotosInputGallery]) {
+            input.onchange = async event => {
+                try {
+                    await processSelectedFiles(event.target.files);
+                } catch (error) {
+                    showNotification('No se pudo preparar la foto: ' + error.message);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+        }
 
         // Cerrar modal al hacer clic fuera del contenido
         document.getElementById('camera-select-modal')?.addEventListener('click', (e) => {
@@ -1012,11 +1150,13 @@
          * @returns {Promise<Blob>} Blob de la imagen comprimida en formato JPEG
          */
         function compressImage(file) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
+                reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
                 reader.readAsDataURL(file);
                 reader.onload = (e) => {
                     const img = new Image();
+                    img.onerror = () => reject(new Error('Formato de imagen no compatible.'));
                     img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
@@ -1046,6 +1186,7 @@
                         
                         function attemptCompress() {
                             canvas.toBlob((blob) => {
+                                if (!blob) return reject(new Error('No se pudo comprimir la imagen.'));
                                 // Si el archivo pesa menos de 1MB o la calidad llegó al límite aceptable (0.4), finalizamos
                                 if (blob.size < 1024 * 1024 || quality <= 0.4) {
                                     resolve(blob);
@@ -1092,33 +1233,18 @@
          */
         workOrderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!currentUser || !ordersReady) return showNotification('Espera a que se carguen las órdenes.');
+            const context = accountContext();
             const saveBtn = document.getElementById('save-btn');
+            if (saveBtn.disabled) return;
             saveBtn.disabled = true;
             saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...`;
 
             try {
-                // 1. Subir fotos a Supabase Storage
-                const fotoUrls = [];
-                for (const foto of selectedFotosFiles) {
-                    const fileName = `${Date.now()}_${foto.name}`;
-                    const { data, error: uploadError } = await supabaseClient.storage
-                        .from('photos')
-                        .upload(`${currentUser.id}/${fileName}`, foto.blob);
-                    
-                    if (uploadError) {
-                        console.error("Error subiendo foto:", uploadError);
-                        throw new Error("Error en Storage: " + uploadError.message + ". Verifica que el bucket 'photos' exista y sea público.");
-                    }
-                    
-                    if (data) {
-                        const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
-                        fotoUrls.push(publicUrl);
-                    }
-                }
-
-                // 2. Guardar en Base de Datos
+                const files = [...selectedFotosFiles];
+                // Capture form values before awaiting uploads or allowing an account transition.
                 const newOrder = {
-                    user_id: currentUser.id,
+                    user_id: context.id,
                     order_number: parseInt(orderNumberInput.value),
                     fecha: document.getElementById('fecha').value,
                     nombre: document.getElementById('nombre').value,
@@ -1132,24 +1258,30 @@
                     nv: document.getElementById('nv').checked,
                     retencion: document.getElementById('retencion').checked,
                     mangueras: document.getElementById('mangueras').checked,
-                    fotos: fotoUrls,
+                    fotos: [],
                     status: 'Abierta'
                 };
-
+                newOrder.fotos = await uploadPhotos(files, context);
+                requireCurrentAccount(context);
                 const { error } = await supabaseClient.from('work_orders').insert([newOrder]);
+                requireCurrentAccount(context);
                 if (error) throw error;
 
                 showNotification("Orden guardada online correctamente.");
                 workOrderForm.reset();
+                photoSelectionEpoch++;
+                document.getElementById('fecha').valueAsDate = new Date();
                 selectedFotosFiles = [];
                 renderFotosPreview();
                 fetchOrders();
             } catch (err) {
                 console.error(err);
-                showNotification("Error al guardar: " + err.message);
+                if (isCurrentAccount(context)) showNotification("Error al guardar: " + err.message);
             } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Guardar en la Nube`;
+                if (isCurrentAccount(context)) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Guardar en la Nube`;
+                }
             }
         });
 
@@ -1163,8 +1295,11 @@
          * @returns {Promise<void>}
          */
         async function deleteOrder(id, num) {
+            const context = accountContext();
             showNotification(`¿Eliminar orden #${num} de la nube?`, true, async () => {
-                const { error } = await supabaseClient.from('work_orders').delete().eq('id', id);
+                requireCurrentAccount(context);
+                const { error } = await supabaseClient.from('work_orders').delete().eq('id', id).eq('user_id', context.id);
+                if (!isCurrentAccount(context)) return;
                 if (error) showNotification("Error al eliminar.");
                 else fetchOrders();
             });
@@ -1192,42 +1327,32 @@
                     <div class="col-span-2 pt-4 border-t mt-4">
                         <h3 class="text-sm font-bold text-green-700">Detalles de Finalización</h3>
                         <div class="grid grid-cols-2 gap-4 mt-2">
-                            <div><p class="text-xs text-gray-500">Monto Cobrado</p><p class="font-bold text-lg text-green-700">$ ${order.monto_cobrado}</p></div>
-                            <div><p class="text-xs text-gray-500">Forma de Pago</p><p class="font-bold text-lg text-indigo-700">${order.forma_pago || 'No especificada'}</p></div>
-                            ${order.notas_extra ? `<div class="col-span-2"><p class="text-xs text-gray-500">Notas Adicionales</p><p class="p-3 bg-green-50 text-green-900 rounded-lg mt-1 border border-green-100 text-sm leading-relaxed">${order.notas_extra}</p></div>` : ''}
+                            <div><p class="text-xs text-gray-500">Monto Cobrado</p><p class="font-bold text-lg text-green-700">$ ${escapeHTML(order.monto_cobrado)}</p></div>
+                            <div><p class="text-xs text-gray-500">Forma de Pago</p><p class="font-bold text-lg text-indigo-700">${escapeHTML(order.forma_pago || 'No especificada')}</p></div>
+                            ${order.notas_extra ? `<div class="col-span-2"><p class="text-xs text-gray-500">Notas Adicionales</p><p class="p-3 bg-green-50 text-green-900 rounded-lg mt-1 border border-green-100 text-sm leading-relaxed whitespace-pre-line">${escapeHTML(order.notas_extra)}</p></div>` : ''}
                         </div>
                     </div>
                 `;
             }
 
             let fotosHtml = '';
-            if (order.fotos && order.fotos.length > 0) {
+            if (Array.isArray(order.fotos) && order.fotos.length > 0) {
                 fotosHtml = `
                     <div class="col-span-2 pt-4 border-t mt-4">
                         <h3 class="text-sm font-bold text-gray-700 mb-2">Galería de Fotos</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            ${order.fotos.map((f, i) => `
-                                <div class="relative aspect-square overflow-hidden rounded-lg border shadow-sm group">
-                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 cursor-zoom-in" onclick="openLightbox('${f}', event)">
-                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all pointer-events-none"></div>
-                                    <button onclick="deleteSpecificPhoto('${order.id}', '${f}', ${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity" title="Borrar Foto">
-                                        <i class="fas fa-trash-alt text-xs"></i>
-                                    </button>
-                                </div>
-                            `).join('')}
-                        </div>
+                        <div id="detail-gallery" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
                     </div>
                 `;
             }
 
             content.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${order.order_number}</p></div>
-                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${order.fecha}</p></div>
-                    <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${order.nombre}</p></div>
-                    <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${order.telefono}" class="text-indigo-600">${order.telefono || 'N/A'}</a></p></div>
-                    <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${order.vehiculo} (${order.dominio})</p></div>
-                    <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border">${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${escapeHTML(order.order_number)}</p></div>
+                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${escapeHTML(order.fecha)}</p></div>
+                    <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${escapeHTML(order.nombre)}</p></div>
+                    <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${String(order.telefono ?? '').replace(/[^+\d]/g, '')}" class="text-indigo-600">${escapeHTML(order.telefono || 'N/A')}</a></p></div>
+                    <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${escapeHTML(order.vehiculo)} (${escapeHTML(order.dominio)})</p></div>
+                    <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border whitespace-pre-line">${escapeHTML(order.novedades)}</p></div>
                     
                     <div class="col-span-2 grid grid-cols-3 gap-2 mt-2 bg-gray-50 p-2 rounded border">
                         <div class="text-xs ${order.garantia ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.garantia ? 'fa-check-square' : 'fa-square'} mr-1"></i> Garantía</div>
@@ -1242,6 +1367,12 @@
                     ${finalizationDetails}
                 </div>
             `;
+            if (Array.isArray(order.fotos)) {
+                const gallery = document.getElementById('detail-gallery');
+                order.fotos.forEach((url, index) => gallery?.appendChild(
+                    createPhotoTile(url, () => deleteSpecificPhoto(order.id, url, index))
+                ));
+            }
             
             // Preparar sección de añadir más fotos
             const addSection = document.getElementById('add-photos-section');
@@ -1259,6 +1390,51 @@
         }
 
         let morePhotosToUpload = [];
+
+        async function changeOrderPhotos(orderId, added, removed, context) {
+            requireCurrentAccount(context);
+            const { data, error } = await supabaseClient.rpc('change_order_photos', {
+                p_order_id: orderId, p_add: added, p_remove: removed, p_user_id: context.id
+            });
+            requireCurrentAccount(context);
+            if (error) throw new Error('No se pudieron actualizar las fotos. Verifica la migración del servidor. ' + error.message);
+            return data;
+        }
+
+        async function uploadPhotos(files, context) {
+            const uploaded = [];
+            try {
+                for (const photo of files) {
+                    requireCurrentAccount(context);
+                    if (photo.uploadedUrl) continue; // Retry an uncertain RPC without uploading duplicates.
+                    const path = `${context.id}/${crypto.randomUUID()}.jpg`;
+                    const { data, error } = await supabaseClient.storage.from('photos')
+                        .upload(path, photo.blob, { contentType: 'image/jpeg' });
+                    if (error || !data) throw new Error(error?.message || 'La subida no devolvió un archivo.');
+                    photo.uploadedPath = data.path;
+                    photo.uploadedUrl = supabaseClient.storage.from('photos').getPublicUrl(data.path).data.publicUrl;
+                    uploaded.push(photo);
+                    requireCurrentAccount(context);
+                }
+                return files.map(photo => photo.uploadedUrl);
+            } catch (error) {
+                // Only compensate known uploads before a database write, never an uncertain RPC commit.
+                if (uploaded.length && isCurrentAccount(context)) {
+                    try {
+                        const { error: cleanupError } = await supabaseClient.storage.from('photos')
+                            .remove(uploaded.map(photo => photo.uploadedPath));
+                        if (cleanupError) throw cleanupError;
+                        uploaded.forEach(photo => {
+                            delete photo.uploadedPath;
+                            delete photo.uploadedUrl;
+                        });
+                    } catch (cleanupError) {
+                        console.error('Upload cleanup failed; retained URLs for retry.', cleanupError);
+                    }
+                }
+                throw error;
+            }
+        }
         /**
          * Configura la funcionalidad de añadir fotos adicionales a una orden.
          * Permite seleccionar, comprimir y subir fotos nuevas, actualizando
@@ -1270,6 +1446,8 @@
          * @returns {void}
          */
         function setupAddMorePhotos(order) {
+            const context = accountContext();
+            const selection = ++photoSelectionEpoch;
             const preview = document.getElementById('add-more-preview');
             const uploadBtn = document.getElementById('upload-more-btn');
             const openModalBtn = document.getElementById('open-add-more-camera-modal');
@@ -1281,6 +1459,8 @@
             
             morePhotosToUpload = [];
             preview.innerHTML = '';
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Confirmar Subida';
             uploadBtn.classList.add('hidden');
 
             // Función para procesar archivos seleccionados
@@ -1288,6 +1468,7 @@
                 const fileArray = Array.from(files);
                 for (const file of fileArray) {
                     const compressed = await compressImage(file);
+                    if (!isCurrentAccount(context) || selection !== photoSelectionEpoch) return;
                     morePhotosToUpload.push({ blob: compressed, name: file.name });
                 }
                 renderMorePhotosPreview();
@@ -1296,9 +1477,19 @@
             // Abrir modal de selección de cámara
             if (openModalBtn) {
                 openModalBtn.onclick = () => {
-                    openCameraSelectModal();
-                    // Configurar event listeners temporales para esta sesión
-                    setupCameraModalForAddMore(inputBack, inputFront, inputGallery, processAddMoreFiles);
+                    if (!uploadBtn.disabled) openCameraSelectModal([inputBack, inputFront, inputGallery]);
+                };
+            }
+            // Replace, rather than accumulate, one handler for each file input.
+            for (const input of [inputBack, inputFront, inputGallery]) {
+                input.onchange = async event => {
+                    try {
+                        if (!uploadBtn.disabled) await processAddMoreFiles(event.target.files);
+                    } catch (error) {
+                        if (isCurrentAccount(context)) showNotification('No se pudo preparar la foto: ' + error.message);
+                    } finally {
+                        event.target.value = '';
+                    }
                 };
             }
 
@@ -1315,107 +1506,33 @@
             }
 
             uploadBtn.onclick = async () => {
+                if (uploadBtn.disabled || !isCurrentAccount(context)) return;
                 uploadBtn.disabled = true;
                 uploadBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Subiendo...`;
                 
                 try {
-                    const newUrls = [];
-                    for (const foto of morePhotosToUpload) {
-                        const fileName = `extra_${Date.now()}_${foto.name}`;
-                        const { data } = await supabaseClient.storage.from('photos').upload(`${currentUser.id}/${fileName}`, foto.blob);
-                        if (data) {
-                            const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
-                            newUrls.push(publicUrl);
-                        }
-                    }
-
-                    const currentFotos = order.fotos || [];
-                    const updatedFotos = [...currentFotos, ...newUrls];
-
-                    const { error } = await supabaseClient
-                        .from('work_orders')
-                        .update({ fotos: updatedFotos })
-                        .eq('id', order.id);
-
-                    if (error) throw error;
+                    // An empty delta checks RPC availability and ownership before uploading anything.
+                    await changeOrderPhotos(order.id, [], [], context);
+                    const files = [...morePhotosToUpload];
+                    const newUrls = await uploadPhotos(files, context);
+                    await changeOrderPhotos(order.id, newUrls, [], context);
+                    if (selection !== photoSelectionEpoch) return;
+                    morePhotosToUpload = [];
                     
                     showNotification("Fotos añadidas con éxito.");
                     document.getElementById('view-order-modal').classList.add('hidden');
                     fetchOrders();
                 } catch (err) {
-                    showNotification("Error: " + err.message);
+                    if (isCurrentAccount(context) && selection === photoSelectionEpoch) {
+                        showNotification('No se completó la subida. Las fotos seleccionadas se conservan para reintentar. ' + err.message);
+                    }
                 } finally {
-                    uploadBtn.disabled = false;
-                    uploadBtn.innerHTML = "Confirmar Subida";
+                    if (isCurrentAccount(context) && selection === photoSelectionEpoch) {
+                        uploadBtn.disabled = false;
+                        uploadBtn.innerHTML = "Confirmar Subida";
+                    }
                 }
             };
-        }
-
-        /**
-         * Configura el modal de cámara para la sección de "añadir más fotos".
-         * Asocia los botones del modal con los inputs específicos de esta sección.
-         * @function setupCameraModalForAddMore
-         * @param {HTMLInputElement} inputBack - Input de cámara trasera
-         * @param {HTMLInputElement} inputFront - Input de cámara frontal
-         * @param {HTMLInputElement} inputGallery - Input de galería
-         * @param {Function} processFiles - Función para procesar archivos seleccionados
-         * @returns {void}
-         */
-        function setupCameraModalForAddMore(inputBack, inputFront, inputGallery, processFiles) {
-            const backBtn = document.getElementById('camera-back-btn');
-            const frontBtn = document.getElementById('camera-front-btn');
-            const galleryBtn = document.getElementById('camera-gallery-btn');
-            const cancelBtn = document.getElementById('camera-cancel-btn');
-
-            // Guardar event listeners originales
-            const originalBackClick = backBtn?.onclick;
-            const originalFrontClick = frontBtn?.onclick;
-            const originalGalleryClick = galleryBtn?.onclick;
-            const originalCancelClick = cancelBtn?.onclick;
-
-            // Configurar nuevos event listeners
-            if (backBtn) {
-                backBtn.onclick = () => {
-                    closeCameraSelectModal();
-                    inputBack.click();
-                };
-            }
-            if (frontBtn) {
-                frontBtn.onclick = () => {
-                    closeCameraSelectModal();
-                    inputFront.click();
-                };
-            }
-            if (galleryBtn) {
-                galleryBtn.onclick = () => {
-                    closeCameraSelectModal();
-                    inputGallery.click();
-                };
-            }
-            if (cancelBtn) {
-                cancelBtn.onclick = closeCameraSelectModal;
-            }
-
-            // Event listeners para cuando se seleccionan fotos
-            const handleBackChange = async (e) => {
-                await processFiles(e.target.files);
-                e.target.value = '';
-                inputBack.removeEventListener('change', handleBackChange);
-            };
-            const handleFrontChange = async (e) => {
-                await processFiles(e.target.files);
-                e.target.value = '';
-                inputFront.removeEventListener('change', handleFrontChange);
-            };
-            const handleGalleryChange = async (e) => {
-                await processFiles(e.target.files);
-                e.target.value = '';
-                inputGallery.removeEventListener('change', handleGalleryChange);
-            };
-
-            inputBack.addEventListener('change', handleBackChange);
-            inputFront.addEventListener('change', handleFrontChange);
-            inputGallery.addEventListener('change', handleGalleryChange);
         }
 
         /**
@@ -1430,38 +1547,18 @@
          * @returns {Promise<void>}
          */
         async function deleteSpecificPhoto(orderId, photoUrl, index) {
-            showNotification("¿Estás seguro de que deseas eliminar esta foto permanentemente?", true, async () => {
+            const context = accountContext();
+            showNotification('¿Eliminar esta foto de la orden? El archivo se conservará para no afectar respaldos u otras órdenes.', true, async () => {
                 try {
-                    // 1. Obtener la orden actualizada
-                    const { data: order } = await supabaseClient.from('work_orders').select('fotos').eq('id', orderId).single();
-                    if (!order) return;
-
-                    const updatedFotos = order.fotos.filter(f => f !== photoUrl);
-
-                    // 2. Borrar de la Base de Datos
-                    const { error: dbError } = await supabaseClient
-                        .from('work_orders')
-                        .update({ fotos: updatedFotos })
-                        .eq('id', orderId);
-
-                    if (dbError) throw dbError;
-
-                    // 3. Borrar del Storage (opcional pero recomendado)
-                    try {
-                        const pathParts = photoUrl.split('/photos/')[1];
-                        if (pathParts) {
-                            const filePath = decodeURIComponent(pathParts);
-                            await supabaseClient.storage.from('photos').remove([filePath]);
-                        }
-                    } catch (storageErr) {
-                        console.error("Error al borrar de storage:", storageErr);
-                    }
+                    await changeOrderPhotos(orderId, [], [photoUrl], context);
+                    // Keep the object: another order or an older backup may still reference it.
+                    // Physical deletion belongs in an owner-scoped reference-aware retention job.
 
                     showNotification("Foto eliminada correctamente.");
                     document.getElementById('view-order-modal').classList.add('hidden');
                     fetchOrders();
                 } catch (err) {
-                    showNotification("Error: " + err.message);
+                    if (isCurrentAccount(context)) showNotification("Error: " + err.message);
                 }
             });
         }
@@ -1479,7 +1576,7 @@
         function openLightbox(url, e) {
             const lb = document.getElementById('lightbox-modal');
             const img = document.getElementById('lightbox-img');
-            img.src = url;
+            img.src = safePhotoURL(url);
             lb.classList.remove('hidden');
             if (e) e.stopPropagation();
         }
@@ -1513,34 +1610,45 @@
          */
         document.getElementById('complete-order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!currentUser) return;
+            const context = accountContext();
             const id = document.getElementById('complete-order-id').value;
             const monto = document.getElementById('monto-cobrado').value;
             const formaPago = document.getElementById('forma-pago').value;
             const notas = document.getElementById('notas-extra').value;
             const submitBtn = document.getElementById('complete-submit-btn');
+            if (submitBtn.disabled) return;
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...`;
 
-            const { error } = await supabaseClient
-                .from('work_orders')
-                .update({ 
-                    status: 'Finalizada', 
-                    monto_cobrado: parseFloat(monto), 
-                    forma_pago: formaPago,
-                    notas_extra: notas 
-                })
-                .eq('id', id);
+            try {
+                const { error } = await supabaseClient
+                    .from('work_orders')
+                    .update({
+                        status: 'Finalizada',
+                        monto_cobrado: parseFloat(monto),
+                        forma_pago: formaPago,
+                        notas_extra: notas
+                    })
+                    .eq('id', id).eq('user_id', context.id);
 
-            if (error) {
-                showNotification("Error al actualizar: " + error.message);
-            } else {
-                showNotification("Orden finalizada correctamente.");
-                document.getElementById('complete-order-modal').classList.add('hidden');
-                fetchOrders();
+                if (!isCurrentAccount(context)) return;
+                if (error) {
+                    showNotification("Error al actualizar: " + error.message);
+                } else {
+                    showNotification("Orden finalizada correctamente.");
+                    document.getElementById('complete-order-modal').classList.add('hidden');
+                    fetchOrders();
+                }
+            } catch (error) {
+                if (isCurrentAccount(context)) showNotification('Error al finalizar: ' + error.message);
+            } finally {
+                if (isCurrentAccount(context)) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `Guardar Finalización`;
+                }
             }
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `Guardar Finalización`;
         });
 
         // --- COMPARTIR WHATSAPP ---
@@ -1653,7 +1761,7 @@
                 document.getElementById('pub-dominio').textContent = order.dominio;
                 document.getElementById('pub-cliente').textContent = order.nombre;
                 document.getElementById('pub-fecha').textContent = new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR');
-                document.getElementById('pub-trabajos').innerHTML = order.novedades.replace(/\n/g, '<br>');
+                document.getElementById('pub-trabajos').textContent = order.novedades ?? '';
                 
                 // Actualizar checks de adicionales
                 updatePubCheck('pub-garantia', order.garantia, 'Garantía');
@@ -1668,17 +1776,10 @@
                 const galeria = document.getElementById('pub-galeria');
                 galeria.innerHTML = '';
                 
-                if (order.fotos && order.fotos.length > 0) {
+                if (Array.isArray(order.fotos) && order.fotos.length > 0) {
                     galeriaSec.classList.remove('hidden');
                     order.fotos.forEach((f) => {
-                        const div = document.createElement('div');
-                        div.className = "relative aspect-square overflow-hidden rounded-xl border border-gray-100 shadow-sm group cursor-zoom-in";
-                        div.onclick = (e) => openLightbox(f, e);
-                        div.innerHTML = `
-                            <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
-                        `;
-                        galeria.appendChild(div);
+                        galeria.appendChild(createPhotoTile(f));
                     });
                 } else {
                     galeriaSec.classList.add('hidden');
@@ -1686,7 +1787,7 @@
                 
             } catch (err) {
                 console.error("Error cargando orden pública:", err);
-                showPublicError(`No se pudo cargar la orden. Asegúrate de tener conexión a Internet o de que la orden exista.<br><br><span class="text-xs text-gray-400">Detalles: ${err.message}</span>`);
+                showPublicError(`No se pudo cargar la orden. Asegúrate de tener conexión a Internet o de que la orden exista. Detalles: ${err.message}`);
             }
         }
         
@@ -1714,7 +1815,7 @@
          * Muestra pantalla de error en la vista pública del cliente.
          * Se usa cuando la orden no existe o hay problemas de conexión.
          * @function showPublicError
-         * @param {string} msg - Mensaje de error a mostrar (admite HTML)
+         * @param {string} msg - Error message rendered as escaped text.
          * @returns {void}
          */
         function showPublicError(msg) {
@@ -1725,7 +1826,7 @@
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     <h2 class="text-xl font-bold text-gray-800">Error de Acceso</h2>
-                    <p class="text-gray-600 leading-relaxed">${msg}</p>
+                    <p class="text-gray-600 leading-relaxed">${escapeHTML(msg)}</p>
                     <a href="index.html" class="inline-block mt-4 bg-indigo-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all text-sm">
                         Ir al Inicio
                     </a>
@@ -1757,21 +1858,22 @@
          */
         function printWorkOrder(order) {
             const printWindow = window.open('', '_blank', 'height=600,width=800');
+            if (!printWindow) return showNotification('Permite las ventanas emergentes para imprimir.');
             printWindow.document.write('<html><head><title>Orden de Trabajo</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:sans-serif} @media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div id="print-area">');
             printWindow.document.write(`
                 <div class="p-8">
                     <div class="flex justify-between items-start mb-6 pb-4 border-b">
                         <div><h1 class="text-2xl font-bold">ORDEN DE TRABAJO</h1><p class="text-gray-600">Taller Mecánico (Online)</p></div>
-                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p></div>
+                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${escapeHTML(order.order_number)}</p><p>Fecha: ${new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p></div>
                     </div>
                     <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
-                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${order.nombre}</span></div>
-                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${order.telefono || 'N/A'}</span></div>
-                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${order.vehiculo}</span></div>
-                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${order.dominio}</span></div>
+                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${escapeHTML(order.nombre)}</span></div>
+                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${escapeHTML(order.telefono || 'N/A')}</span></div>
+                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${escapeHTML(order.vehiculo)}</span></div>
+                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${escapeHTML(order.dominio)}</span></div>
                     </div>
                     <h2 class="text-lg font-bold mb-2">Novedades y Trabajos a Realizar</h2>
-                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p>${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p class="whitespace-pre-line">${escapeHTML(order.novedades)}</p></div>
                     
                     <div class="grid grid-cols-3 gap-4 mb-6 p-4 border rounded bg-gray-50">
                         <div><strong class="text-gray-500">Garantía:</strong> ${order.garantia ? 'SÍ' : 'NO'}</div>
@@ -1824,12 +1926,66 @@
         const restoreBtn = document.getElementById('restore-btn');
         const restoreInput = document.getElementById('restore-input');
 
+        function normalizeBackup(data, userId) {
+            if (!Array.isArray(data) || data.length === 0 || data.length > 10000) {
+                throw new Error('El archivo debe contener entre 1 y 10000 órdenes.');
+            }
+            const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const flags = ['garantia', 'oblea', 'ph', 'nv', 'retencion', 'mangueras'];
+            const allowed = new Set(['id', 'user_id', 'order_number', 'orderNumber', 'fecha', 'nombre',
+                'telefono', 'vehiculo', 'dominio', 'novedades', ...flags, 'fotos', 'status',
+                'monto_cobrado', 'forma_pago', 'notas_extra', 'created_at', 'updated_at', 'createdAt']);
+            const ids = new Set();
+            return data.map((source, index) => {
+                const invalid = () => { throw new Error(`Orden ${index + 1}: formato inválido o propietario incorrecto.`); };
+                if (!source || typeof source !== 'object' || Array.isArray(source)) invalid();
+                if (Object.keys(source).some(key => !allowed.has(key))) invalid();
+                if (source.user_id && source.user_id !== userId) invalid();
+                const order = { ...source, user_id: userId };
+                const legacy = !('order_number' in order) && 'orderNumber' in order;
+                order.order_number = order.order_number ?? order.orderNumber;
+                if (!Number.isSafeInteger(order.order_number) || order.order_number < 1) invalid();
+                if (order.id && !uuid.test(order.id) && !legacy) invalid();
+                if (!order.id || (legacy && !uuid.test(order.id))) order.id = crypto.randomUUID();
+                order.id = order.id.toLowerCase();
+                if (ids.has(order.id)) invalid();
+                ids.add(order.id);
+                for (const field of ['nombre', 'vehiculo', 'dominio', 'novedades']) {
+                    if (typeof order[field] !== 'string' || !order[field].trim()) invalid();
+                }
+                if (typeof order.fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(order.fecha)) invalid();
+                const date = new Date(order.fecha + 'T00:00:00Z');
+                if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== order.fecha) invalid();
+                for (const field of flags) {
+                    order[field] = order[field] ?? false;
+                    if (typeof order[field] !== 'boolean') invalid();
+                }
+                for (const field of ['telefono', 'forma_pago', 'notas_extra']) {
+                    order[field] = order[field] ?? '';
+                    if (typeof order[field] !== 'string') invalid();
+                }
+                order.status = order.status ?? 'Abierta';
+                if (!['Abierta', 'Finalizada'].includes(order.status)) invalid();
+                order.fotos = order.fotos ?? [];
+                if (!Array.isArray(order.fotos) || order.fotos.some(url => typeof url !== 'string' || !safePhotoURL(url))) invalid();
+                if (order.monto_cobrado != null && (typeof order.monto_cobrado !== 'number' || !Number.isFinite(order.monto_cobrado))) invalid();
+                if (order.createdAt && !order.created_at) order.created_at = order.createdAt;
+                for (const field of ['created_at', 'updated_at']) {
+                    if (order[field] != null && (typeof order[field] !== 'string' || !Number.isFinite(Date.parse(order[field])))) invalid();
+                }
+                delete order.orderNumber;
+                delete order.createdAt;
+                return order;
+            });
+        }
+
         // --- EVENT LISTENERS: BACKUP/RESTORE ---
 
         /**
          * Botón Backup: exporta todas las órdenes como archivo JSON descargable.
          */
         backupBtn.addEventListener('click', () => {
+            if (!currentUser || !ordersReady) return showNotification('Espera a que se carguen todas las órdenes antes de exportar.');
             if (allOrders.length === 0) return showNotification("No hay datos para exportar.");
             
             const jsonString = JSON.stringify(allOrders, null, 2);
@@ -1854,21 +2010,22 @@
          * y muestra confirmación antes de reemplazar datos en la nube.
          */
         restoreInput.addEventListener('change', (e) => {
+            const context = accountContext();
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const data = JSON.parse(event.target.result);
-                    if (!Array.isArray(data)) throw new Error("Formato inválido");
+                    requireCurrentAccount(context);
+                    const data = normalizeBackup(JSON.parse(event.target.result), context.id);
                     
                     showNotification(
-                        "<b>¡Atención!</b> Estás a punto de reemplazar tus datos en la nube con los del archivo. Esta acción no se puede deshacer. <br><br> ¿Deseas continuar?",
+                        '¡Atención! Se reemplazarán tus órdenes con las del archivo. Se conservarán sus identificadores. Esta acción no se puede deshacer. ¿Deseas continuar?',
                         true,
-                        () => restoreToCloud(data)
+                        () => restoreToCloud(data, context)
                     );
                 } catch (err) {
-                    showNotification("Error: El archivo no es válido.");
+                    if (isCurrentAccount(context)) showNotification('No se puede restaurar: ' + err.message);
                 }
             };
             reader.readAsText(file);
@@ -1879,43 +2036,36 @@
 
         /**
          * Restaura un backup de órdenes a Supabase.
-         * Flujo: 1) Borra todas las órdenes actuales del usuario,
-         * 2) Inserta las órdenes del archivo JSON.
+         * Uses one owner-scoped transactional RPC; existing share IDs are preserved.
          * Muestra progreso y resultado al usuario.
          * @async
          * @function restoreToCloud
          * @param {Array<Object>} data - Array de órdenes desde el archivo JSON
          * @returns {Promise<void>}
          */
-        async function restoreToCloud(data) {
+        let restoreInProgress = false;
+
+        async function restoreToCloud(data, context = accountContext()) {
+            if (restoreInProgress) return;
+            restoreInProgress = true;
             showNotification("Restaurando datos en la nube... Por favor espera.");
             try {
-                // 1. Borrar órdenes actuales del usuario
-                const { error: delError } = await supabaseClient
-                    .from('work_orders')
-                    .delete()
-                    .eq('user_id', currentUser.id);
-                
-                if (delError) throw delError;
-
-                // 2. Preparar nuevos datos (limpiando IDs antiguos si es necesario)
-                const newOrders = data.map(order => {
-                    const { id, ...rest } = order; // Dejar que Supabase genere nuevos UUIDs
-                    return { ...rest, user_id: currentUser.id };
+                requireCurrentAccount(context);
+                const orders = normalizeBackup(data, context.id);
+                // One PostgreSQL transaction; never fall back to client-side delete/insert.
+                const { error } = await supabaseClient.rpc('restore_work_orders', {
+                    p_orders: orders, p_user_id: context.id
                 });
-
-                // 3. Insertar en lotes
-                const { error: insError } = await supabaseClient
-                    .from('work_orders')
-                    .insert(newOrders);
-                
-                if (insError) throw insError;
+                requireCurrentAccount(context);
+                if (error) throw new Error('Verifica la migración del servidor. ' + error.message);
 
                 showNotification("¡Restauración completada con éxito!");
-                fetchOrders();
+                await fetchOrders();
             } catch (err) {
                 console.error(err);
-                showNotification("Error durante la restauración: " + err.message);
+                if (isCurrentAccount(context)) showNotification('Restauración no confirmada: ' + err.message);
+            } finally {
+                restoreInProgress = false;
             }
         }
 
@@ -1926,7 +2076,7 @@
          * Modo simple: muestra mensaje con botón OK.
          * Modo confirmación: muestra mensaje con botones Confirmar/Cancelar.
          * @function showNotification
-         * @param {string} msg - Mensaje a mostrar (admite HTML)
+         * @param {string} msg - Plain text message; HTML is not accepted.
          * @param {boolean} [isConfirm=false] - Si true, muestra botones de confirmación
          * @param {Function|null} [callback=null] - Función a ejecutar al confirmar
          * @returns {void}
@@ -1935,12 +2085,15 @@
             const modal = document.getElementById('notification-modal');
             const message = document.getElementById('notification-message');
             const buttons = document.getElementById('modal-buttons');
-            message.innerHTML = msg;
+            message.textContent = msg;
             modal.classList.remove('hidden');
             buttons.innerHTML = '';
             if (isConfirm) {
                 const b1 = document.createElement('button'); b1.className = "bg-red-600 text-white px-4 py-2 rounded-lg mr-2"; b1.textContent = "Confirmar";
-                b1.onclick = () => { callback(); modal.classList.add('hidden'); };
+                b1.onclick = async () => {
+                    modal.classList.add('hidden');
+                    try { await callback(); } catch (error) { showNotification('Error: ' + error.message); }
+                };
                 const b2 = document.createElement('button'); b2.className = "bg-gray-300 px-4 py-2 rounded-lg"; b2.textContent = "Cancelar";
                 b2.onclick = () => modal.classList.add('hidden');
                 buttons.append(b1, b2);
@@ -1962,6 +2115,13 @@
          */
         const urlParams = new URLSearchParams(window.location.search);
         const orderIdParam = urlParams.get('id');
+        // Keep the callback synchronous; Supabase calls run outside its auth lock.
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            if (orderIdParam || session?.user?.id === currentUser?.id) return;
+            ++authRequest;
+            clearAccountState();
+            if (session?.user) setTimeout(() => checkUser(), 0);
+        });
         if (orderIdParam) {
             showPublicOrderView(orderIdParam);
         } else {
