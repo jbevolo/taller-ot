@@ -516,6 +516,22 @@
          */
         let filteredOrders = null;
 
+        // --- UTILIDADES DE FECHA ---
+
+        /**
+         * Convierte una fecha ISO (YYYY-MM-DD) al formato de visualización DD-MM-AAAA.
+         * @param {string} iso Fecha en formato ISO (ej. "2026-09-08")
+         * @returns {string} Fecha formateada (ej. "08-09-2026") o el valor original si no es válida.
+         */
+        function formatFecha(iso) {
+            if (!iso) return '';
+            const parts = String(iso).slice(0, 10).split('-');
+            if (parts.length !== 3) return iso;
+            const [y, m, d] = parts;
+            if (!y || !m || !d) return iso;
+            return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
+        }
+
         // --- SELECTORES DOM ---
         // Referencias a elementos del DOM para evitar búsquedas repetidas.
 
@@ -725,7 +741,7 @@
                 
                 tr.innerHTML = `
                     <td class="px-4 py-4 font-bold">#${order.order_number}</td>
-                    <td class="px-4 py-4">${order.fecha}</td>
+                    <td class="px-4 py-4">${formatFecha(order.fecha)}</td>
                     <td class="px-4 py-4">${order.nombre}</td>
                     <td class="px-4 py-4">${order.vehiculo}</td>
                     <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${order.dominio}</span></td>
@@ -1223,7 +1239,7 @@
             content.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${order.order_number}</p></div>
-                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${order.fecha}</p></div>
+                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${formatFecha(order.fecha)}</p></div>
                     <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${order.nombre}</p></div>
                     <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${order.telefono}" class="text-indigo-600">${order.telefono || 'N/A'}</a></p></div>
                     <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${order.vehiculo} (${order.dominio})</p></div>
@@ -1652,7 +1668,7 @@
                 document.getElementById('pub-vehiculo').textContent = order.vehiculo;
                 document.getElementById('pub-dominio').textContent = order.dominio;
                 document.getElementById('pub-cliente').textContent = order.nombre;
-                document.getElementById('pub-fecha').textContent = new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+                document.getElementById('pub-fecha').textContent = formatFecha(order.fecha);
                 document.getElementById('pub-trabajos').innerHTML = order.novedades.replace(/\n/g, '<br>');
                 
                 // Actualizar checks de adicionales
@@ -1762,7 +1778,7 @@
                 <div class="p-8">
                     <div class="flex justify-between items-start mb-6 pb-4 border-b">
                         <div><h1 class="text-2xl font-bold">ORDEN DE TRABAJO</h1><p class="text-gray-600">Taller Mecánico (Online)</p></div>
-                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p></div>
+                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${formatFecha(order.fecha)}</p></div>
                     </div>
                     <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
                         <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${order.nombre}</span></div>
