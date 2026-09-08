@@ -188,7 +188,11 @@
                                 </div>
                                 <div>
                                     <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha</label>
-                                    <input type="date" id="fecha" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                                    <div class="relative mt-1 rounded-md border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-indigo-500">
+                                        <span id="fecha-display" class="block w-full p-2 pr-10 text-gray-800 pointer-events-none">DD-MM-AAAA</span>
+                                        <input type="date" id="fecha" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required aria-label="Fecha">
+                                        <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none" aria-hidden="true"></i>
+                                    </div>
                                 </div>
                             </div>
                             <div>
@@ -281,7 +285,7 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N°</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                        <th class="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Fecha</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehículo</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dominio</th>
@@ -532,6 +536,12 @@
             return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
         }
 
+        /** Sincroniza el valor ISO del selector nativo con el formato visible DD-MM-AAAA. */
+        function updateFechaDisplay() {
+            const fechaInput = document.getElementById('fecha');
+            document.getElementById('fecha-display').textContent = formatFecha(fechaInput.value) || 'DD-MM-AAAA';
+        }
+
         // --- SELECTORES DOM ---
         // Referencias a elementos del DOM para evitar búsquedas repetidas.
 
@@ -741,7 +751,7 @@
                 
                 tr.innerHTML = `
                     <td class="px-4 py-4 font-bold">#${order.order_number}</td>
-                    <td class="px-4 py-4">${formatFecha(order.fecha)}</td>
+                    <td class="w-32 px-4 py-4 whitespace-nowrap">${formatFecha(order.fecha)}</td>
                     <td class="px-4 py-4">${order.nombre}</td>
                     <td class="px-4 py-4">${order.vehiculo}</td>
                     <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${order.dominio}</span></td>
@@ -1157,6 +1167,8 @@
 
                 showNotification("Orden guardada online correctamente.");
                 workOrderForm.reset();
+                document.getElementById('fecha').valueAsDate = new Date();
+                updateFechaDisplay();
                 selectedFotosFiles = [];
                 renderFotosPreview();
                 fetchOrders();
@@ -1982,7 +1994,11 @@
             showPublicOrderView(orderIdParam);
         } else {
             checkUser();
-            document.getElementById('fecha').valueAsDate = new Date();
+            const fechaInput = document.getElementById('fecha');
+            fechaInput.valueAsDate = new Date();
+            fechaInput.addEventListener('input', updateFechaDisplay);
+            fechaInput.addEventListener('change', updateFechaDisplay);
+            updateFechaDisplay();
         }
 
         /**

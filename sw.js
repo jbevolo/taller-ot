@@ -6,7 +6,7 @@
  */
 
 /** @type {string} Nombre del cache actual */
-const CACHE_NAME = 'taller-ot-v1';
+const CACHE_NAME = 'taller-ot-v2';
 
 /** @type {string[]} Assets a precachear para uso offline */
 const ASSETS = [
