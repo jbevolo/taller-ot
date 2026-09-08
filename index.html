@@ -575,6 +575,88 @@
         /** @type {HTMLElement} Contenedor de previews de fotos */
         const fotosPreview = document.getElementById('fotos-preview');
 
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+
+        function safePhotoURL(value) {
+            try {
+                const url = new URL(value);
+                return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
+            } catch {
+                return '';
+            }
+        }
+
+        function createPhotoTile(url, onDelete) {
+            const tile = document.createElement('div');
+            tile.className = 'relative aspect-square overflow-hidden rounded-lg border shadow-sm group cursor-zoom-in';
+            const image = document.createElement('img');
+            image.className = 'w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-zoom-in';
+            image.alt = 'Foto del trabajo';
+            image.src = safePhotoURL(url);
+            image.onclick = event => openLightbox(image.src, event);
+            tile.appendChild(image);
+            if (onDelete) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity';
+                button.title = 'Borrar Foto';
+                button.textContent = '×';
+                button.onclick = onDelete;
+                tile.appendChild(button);
+            }
+            return tile;
+        }
+
+        let sessionEpoch = 0;
+        let authRequest = 0;
+        let ordersRequest = 0;
+
+        function accountContext() {
+            return currentUser ? { id: currentUser.id, epoch: sessionEpoch } : null;
+        }
+
+        function isCurrentAccount(context) {
+            return Boolean(context && context.epoch === sessionEpoch && context.id === currentUser?.id);
+        }
+
+        function requireCurrentAccount(context) {
+            if (!isCurrentAccount(context)) throw new Error('La sesión cambió durante la operación.');
+        }
+
+        function clearAccountState() {
+            sessionEpoch++;
+            ordersRequest++;
+            currentUser = null;
+            allOrders = [];
+            filteredOrders = null;
+            currentPage = 1;
+            selectedFotosFiles = [];
+            morePhotosToUpload = [];
+            clearTimeout(searchTimeout);
+            workOrderForm.reset();
+            document.getElementById('complete-order-form').reset();
+            orderNumberInput.value = '';
+            userDisplay.textContent = '';
+            document.getElementById('search-input').value = '';
+            tableBody.innerHTML = '';
+            fotosPreview.innerHTML = '';
+            document.getElementById('add-more-preview').innerHTML = '';
+            document.getElementById('view-order-content').innerHTML = '';
+            document.getElementById('lightbox-img').src = '';
+            document.getElementById('view-whatsapp-btn').onclick = null;
+            renderPagination(0, 0);
+            for (const id of ['view-order-modal', 'complete-order-modal', 'lightbox-modal']) {
+                document.getElementById(id).classList.add('hidden');
+            }
+            closeCameraSelectModal();
+            appContainer.classList.add('hidden');
+            authContainer.classList.remove('hidden');
+        }
+
         // --- LÓGICA DE AUTENTICACIÓN ---
 
         /**
@@ -586,17 +668,27 @@
          * @returns {Promise<void>}
          */
         async function checkUser() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (user) {
+            const request = ++authRequest;
+            try {
+                const { data: { user }, error } = await supabaseClient.auth.getUser();
+                if (request !== authRequest) return;
+                if (error) throw error;
+                if (!user) {
+                    clearAccountState();
+                    return;
+                }
+                if (currentUser?.id !== user.id) clearAccountState();
                 currentUser = user;
-                userDisplay.textContent = `Sesión iniciada como: ${user.email}`;
-                authContainer.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                fetchOrders();
-            } else {
-                currentUser = null;
-                authContainer.classList.remove('hidden');
-                appContainer.classList.add('hidden');
+                const context = accountContext();
+                if (await fetchOrders() && isCurrentAccount(context)) {
+                    userDisplay.textContent = `Sesión iniciada como: ${user.email}`;
+                    authContainer.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                }
+            } catch (error) {
+                if (request !== authRequest) return;
+                clearAccountState();
+                showNotification('No se pudo verificar la sesión: ' + error.message);
             }
         }
 
@@ -672,8 +764,14 @@
          * Logout: cierra sesión en Supabase y vuelve a la pantalla de login.
          */
         document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            checkUser();
+            ++authRequest;
+            clearAccountState();
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) throw error;
+            } catch (error) {
+                showNotification('No se pudo cerrar la sesión remota. Inténtalo nuevamente: ' + error.message);
+            }
         });
 
         // --- GESTIÓN DE ÓRDENES ---
@@ -687,15 +785,17 @@
          * @returns {Promise<void>}
          */
         async function fetchOrders() {
-            const { data, error } = await supabaseClient
-                .from('work_orders')
-                .select('*')
-                .order('order_number', { ascending: false });
-            
-            if (error) {
-                console.error(error);
-                showNotification("Error cargando órdenes.");
-            } else {
+            const context = accountContext();
+            if (!context) return false;
+            const request = ++ordersRequest;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('work_orders')
+                    .select('*')
+                    .eq('user_id', context.id)
+                    .order('order_number', { ascending: false });
+                if (!isCurrentAccount(context) || request !== ordersRequest) return false;
+                if (error) throw error;
                 allOrders = data;
                 // Resetear paginación y filtros al cargar datos frescos
                 currentPage = 1;
@@ -706,6 +806,13 @@
                 
                 renderOrders();
                 setNextOrderNumber();
+                return true;
+            } catch (error) {
+                if (isCurrentAccount(context) && request === ordersRequest) {
+                    console.error(error);
+                    showNotification("Error cargando órdenes.");
+                }
+                return false;
             }
         }
 
@@ -747,18 +854,18 @@
             pageOrders.forEach(order => {
                 const tr = document.createElement('tr');
                 const statusColor = order.status === 'Finalizada' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-                const hasFotos = order.fotos && order.fotos.length > 0;
+                const hasFotos = Array.isArray(order.fotos) && order.fotos.length > 0;
                 
                 tr.innerHTML = `
-                    <td class="px-4 py-4 font-bold">#${order.order_number}</td>
-                    <td class="w-32 px-4 py-4 whitespace-nowrap">${formatFecha(order.fecha)}</td>
-                    <td class="px-4 py-4">${order.nombre}</td>
-                    <td class="px-4 py-4">${order.vehiculo}</td>
-                    <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${order.dominio}</span></td>
+                    <td class="px-4 py-4 font-bold">#${escapeHTML(order.order_number)}</td>
+                    <td class="w-32 px-4 py-4 whitespace-nowrap">${escapeHTML(formatFecha(order.fecha))}</td>
+                    <td class="px-4 py-4">${escapeHTML(order.nombre)}</td>
+                    <td class="px-4 py-4">${escapeHTML(order.vehiculo)}</td>
+                    <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${escapeHTML(order.dominio)}</span></td>
                     <td class="px-4 py-4 text-center">
                         ${hasFotos ? `<i class="fas fa-camera text-indigo-500" title="${order.fotos.length} fotos"></i>` : `<span class="text-gray-300">-</span>`}
                     </td>
-                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">${order.status}</span></td>
+                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">${escapeHTML(order.status)}</span></td>
                     <td class="px-4 py-4 text-sm">
                         <div class="flex items-center space-x-3">
                             <button class="view-btn text-blue-600 hover:text-blue-900" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></button>
@@ -1118,33 +1225,20 @@
          */
         workOrderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const context = accountContext();
+            if (!context) return showNotification('Inicia sesión antes de guardar una orden.');
             const saveBtn = document.getElementById('save-btn');
+            if (saveBtn.disabled) return;
             saveBtn.disabled = true;
             saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...`;
 
+            const files = [...selectedFotosFiles];
+            let uploadResult = { urls: [], newlyUploaded: [] };
             try {
-                // 1. Subir fotos a Supabase Storage
-                const fotoUrls = [];
-                for (const foto of selectedFotosFiles) {
-                    const fileName = `${Date.now()}_${foto.name}`;
-                    const { data, error: uploadError } = await supabaseClient.storage
-                        .from('photos')
-                        .upload(`${currentUser.id}/${fileName}`, foto.blob);
-                    
-                    if (uploadError) {
-                        console.error("Error subiendo foto:", uploadError);
-                        throw new Error("Error en Storage: " + uploadError.message + ". Verifica que el bucket 'photos' exista y sea público.");
-                    }
-                    
-                    if (data) {
-                        const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
-                        fotoUrls.push(publicUrl);
-                    }
-                }
+                uploadResult = await uploadPhotos(files, context);
 
-                // 2. Guardar en Base de Datos
                 const newOrder = {
-                    user_id: currentUser.id,
+                    user_id: context.id,
                     order_number: parseInt(orderNumberInput.value),
                     fecha: document.getElementById('fecha').value,
                     nombre: document.getElementById('nombre').value,
@@ -1158,12 +1252,23 @@
                     nv: document.getElementById('nv').checked,
                     retencion: document.getElementById('retencion').checked,
                     mangueras: document.getElementById('mangueras').checked,
-                    fotos: fotoUrls,
+                    fotos: uploadResult.urls,
                     status: 'Abierta'
                 };
 
-                const { error } = await supabaseClient.from('work_orders').insert([newOrder]);
-                if (error) throw error;
+                let result;
+                try {
+                    result = await supabaseClient.from('work_orders').insert([newOrder]);
+                } catch (error) {
+                    throw photoError('persistence', error.message, true);
+                }
+                if (!isCurrentAccount(context) || !result || typeof result !== 'object') {
+                    throw photoError('persistence', 'La respuesta de persistencia no pudo confirmarse.', true);
+                }
+                if (result.error) {
+                    const cleanup = await compensateUploads(uploadResult.newlyUploaded, context);
+                    throw persistenceFailure(result.error, cleanup);
+                }
 
                 showNotification("Orden guardada online correctamente.");
                 workOrderForm.reset();
@@ -1174,10 +1279,12 @@
                 fetchOrders();
             } catch (err) {
                 console.error(err);
-                showNotification("Error al guardar: " + err.message);
+                if (isCurrentAccount(context)) showNotification(photoFailureMessage(err));
             } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Guardar en la Nube`;
+                if (isCurrentAccount(context)) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Guardar en la Nube`;
+                }
             }
         });
 
@@ -1220,42 +1327,32 @@
                     <div class="col-span-2 pt-4 border-t mt-4">
                         <h3 class="text-sm font-bold text-green-700">Detalles de Finalización</h3>
                         <div class="grid grid-cols-2 gap-4 mt-2">
-                            <div><p class="text-xs text-gray-500">Monto Cobrado</p><p class="font-bold text-lg text-green-700">$ ${order.monto_cobrado}</p></div>
-                            <div><p class="text-xs text-gray-500">Forma de Pago</p><p class="font-bold text-lg text-indigo-700">${order.forma_pago || 'No especificada'}</p></div>
-                            ${order.notas_extra ? `<div class="col-span-2"><p class="text-xs text-gray-500">Notas Adicionales</p><p class="p-3 bg-green-50 text-green-900 rounded-lg mt-1 border border-green-100 text-sm leading-relaxed">${order.notas_extra}</p></div>` : ''}
+                            <div><p class="text-xs text-gray-500">Monto Cobrado</p><p class="font-bold text-lg text-green-700">$ ${escapeHTML(order.monto_cobrado)}</p></div>
+                            <div><p class="text-xs text-gray-500">Forma de Pago</p><p class="font-bold text-lg text-indigo-700">${escapeHTML(order.forma_pago || 'No especificada')}</p></div>
+                            ${order.notas_extra ? `<div class="col-span-2"><p class="text-xs text-gray-500">Notas Adicionales</p><p class="p-3 bg-green-50 text-green-900 rounded-lg mt-1 border border-green-100 text-sm leading-relaxed whitespace-pre-line">${escapeHTML(order.notas_extra)}</p></div>` : ''}
                         </div>
                     </div>
                 `;
             }
 
             let fotosHtml = '';
-            if (order.fotos && order.fotos.length > 0) {
+            if (Array.isArray(order.fotos) && order.fotos.length > 0) {
                 fotosHtml = `
                     <div class="col-span-2 pt-4 border-t mt-4">
                         <h3 class="text-sm font-bold text-gray-700 mb-2">Galería de Fotos</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            ${order.fotos.map((f, i) => `
-                                <div class="relative aspect-square overflow-hidden rounded-lg border shadow-sm group">
-                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 cursor-zoom-in" onclick="openLightbox('${f}', event)">
-                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all pointer-events-none"></div>
-                                    <button onclick="deleteSpecificPhoto('${order.id}', '${f}', ${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity" title="Borrar Foto">
-                                        <i class="fas fa-trash-alt text-xs"></i>
-                                    </button>
-                                </div>
-                            `).join('')}
-                        </div>
+                        <div id="detail-gallery" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
                     </div>
                 `;
             }
 
             content.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${order.order_number}</p></div>
-                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${formatFecha(order.fecha)}</p></div>
-                    <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${order.nombre}</p></div>
-                    <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${order.telefono}" class="text-indigo-600">${order.telefono || 'N/A'}</a></p></div>
-                    <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${order.vehiculo} (${order.dominio})</p></div>
-                    <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border">${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${escapeHTML(order.order_number)}</p></div>
+                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${escapeHTML(formatFecha(order.fecha))}</p></div>
+                    <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${escapeHTML(order.nombre)}</p></div>
+                    <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${String(order.telefono ?? '').replace(/[^+\d]/g, '')}" class="text-indigo-600">${escapeHTML(order.telefono || 'N/A')}</a></p></div>
+                    <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${escapeHTML(order.vehiculo)} (${escapeHTML(order.dominio)})</p></div>
+                    <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border whitespace-pre-line">${escapeHTML(order.novedades)}</p></div>
                     
                     <div class="col-span-2 grid grid-cols-3 gap-2 mt-2 bg-gray-50 p-2 rounded border">
                         <div class="text-xs ${order.garantia ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.garantia ? 'fa-check-square' : 'fa-square'} mr-1"></i> Garantía</div>
@@ -1270,6 +1367,12 @@
                     ${finalizationDetails}
                 </div>
             `;
+            if (Array.isArray(order.fotos)) {
+                const gallery = document.getElementById('detail-gallery');
+                order.fotos.forEach((url, index) => gallery?.appendChild(
+                    createPhotoTile(url, () => deleteSpecificPhoto(order.id, url, index))
+                ));
+            }
             
             // Preparar sección de añadir más fotos
             const addSection = document.getElementById('add-photos-section');
@@ -1287,6 +1390,152 @@
         }
 
         let morePhotosToUpload = [];
+
+        function photoError(kind, message, ambiguous = false, cleanupFailed = false, cleanupAttempted = false) {
+            const error = new Error(message);
+            error.photoFailure = kind;
+            error.ambiguous = ambiguous;
+            error.cleanupFailed = cleanupFailed;
+            error.cleanupAttempted = cleanupAttempted;
+            return error;
+        }
+
+        function photoFailureMessage(error) {
+            if (error.photoFailure === 'upload') {
+                if (!error.cleanupAttempted) {
+                    return 'Falló la subida de fotos: ' + error.message;
+                }
+                const cleanup = error.cleanupFailed
+                    ? ' Además, la compensación falló parcialmente; se conservaron las referencias para reintentar.'
+                    : ' Las subidas previas de esta operación fueron compensadas.';
+                return 'Falló la subida de fotos: ' + error.message + cleanup;
+            }
+            if (error.photoFailure === 'persistence') {
+                if (error.ambiguous) {
+                    return 'No se pudo confirmar la persistencia de las fotos. Los objetos se conservaron porque la RPC pudo haberse aplicado. ' + error.message;
+                }
+                if (!error.cleanupAttempted) {
+                    return 'Falló la persistencia de las fotos: ' + error.message;
+                }
+                const cleanup = error.cleanupFailed
+                    ? ' La compensación falló parcialmente; algunas subidas nuevas pueden requerir limpieza manual.'
+                    : ' Las subidas nuevas de esta operación fueron compensadas.';
+                return 'Falló la persistencia de las fotos: ' + error.message + cleanup;
+            }
+            return 'Error al procesar las fotos: ' + error.message;
+        }
+
+        async function compensateUploads(uploaded, context) {
+            if (uploaded.length === 0) return { failed: false };
+            if (!isCurrentAccount(context)) {
+                return { failed: true, error: new Error('La sesión cambió antes de compensar.') };
+            }
+            try {
+                const { error } = await supabaseClient.storage.from('photos')
+                    .remove(uploaded.map(photo => photo.uploadedPath));
+                if (error) throw error;
+                uploaded.forEach(photo => {
+                    delete photo.uploadedPath;
+                    delete photo.uploadedUrl;
+                });
+                return { failed: false };
+            } catch (error) {
+                console.error('Photo upload compensation failed.', error);
+                return { failed: true, error };
+            }
+        }
+
+        function persistenceFailure(error, cleanup) {
+            return photoError('persistence', error.message || String(error), false, cleanup.failed, true);
+        }
+
+        async function changeOrderPhotos(orderId, added, removed, context) {
+            requireCurrentAccount(context);
+            let result;
+            try {
+                result = await supabaseClient.rpc('change_order_photos', {
+                    p_order_id: orderId,
+                    p_add: added,
+                    p_remove: removed,
+                    p_user_id: context.id
+                });
+            } catch (error) {
+                throw photoError('persistence', error.message, true);
+            }
+            if (!isCurrentAccount(context) || !result || typeof result !== 'object') {
+                throw photoError('persistence', 'La respuesta de la RPC no pudo confirmarse.', true);
+            }
+            if (result.error) throw photoError('persistence', result.error.message, false);
+            if (!Array.isArray(result.data)
+                || result.data.some(url => typeof url !== 'string' || !safePhotoURL(url))) {
+                throw photoError('persistence', 'La RPC no confirmó un arreglo válido de fotos.', true);
+            }
+            return result.data;
+        }
+
+        async function uploadPhotos(files, context) {
+            const newlyUploaded = [];
+            try {
+                for (const photo of files) {
+                    requireCurrentAccount(context);
+                    if (photo.uploadedUrl) continue;
+                    const path = `${context.id}/${crypto.randomUUID()}.jpg`;
+                    let result;
+                    try {
+                        result = await supabaseClient.storage.from('photos')
+                            .upload(path, photo.blob, { contentType: 'image/jpeg' });
+                    } catch (error) {
+                        // The request outcome is unknown, but the generated path is safe to compensate.
+                        photo.uploadedPath = path;
+                        newlyUploaded.push(photo);
+                        throw error;
+                    }
+                    if (!result || typeof result !== 'object' || Array.isArray(result)) {
+                        photo.uploadedPath = path;
+                        newlyUploaded.push(photo);
+                        throw new Error('Storage devolvió una respuesta inválida.');
+                    }
+                    const { data, error } = result;
+                    if (error) throw new Error(error.message || 'Storage rechazó la subida.');
+                    if (!data || typeof data !== 'object' || typeof data.path !== 'string') {
+                        photo.uploadedPath = path;
+                        newlyUploaded.push(photo);
+                        throw new Error('Storage no devolvió una ruta válida para el archivo.');
+                    }
+                    if (data.path !== path) {
+                        photo.uploadedPath = path;
+                        newlyUploaded.push(photo);
+                        throw new Error('Storage devolvió una ruta distinta de la solicitada.');
+                    }
+                    photo.uploadedPath = path;
+                    newlyUploaded.push(photo);
+                    const publicUrl = supabaseClient.storage.from('photos').getPublicUrl(path).data?.publicUrl;
+                    if (!safePhotoURL(publicUrl)) {
+                        throw new Error('Storage no devolvió una URL pública HTTPS válida.');
+                    }
+                    photo.uploadedUrl = publicUrl;
+                    requireCurrentAccount(context);
+                }
+                return { urls: files.map(photo => photo.uploadedUrl), newlyUploaded };
+            } catch (error) {
+                const cleanup = await compensateUploads(newlyUploaded, context);
+                throw photoError('upload', error.message, false, cleanup.failed, newlyUploaded.length > 0);
+            }
+        }
+
+        async function addOrderPhotos(orderId, files, context) {
+            // Check RPC availability and ownership before creating Storage objects.
+            await changeOrderPhotos(orderId, [], [], context);
+            const upload = await uploadPhotos(files, context);
+            try {
+                await changeOrderPhotos(orderId, upload.urls, [], context);
+                return upload.urls;
+            } catch (error) {
+                if (error.ambiguous) throw error;
+                const cleanup = await compensateUploads(upload.newlyUploaded, context);
+                throw persistenceFailure(error, cleanup);
+            }
+        }
         /**
          * Configura la funcionalidad de añadir fotos adicionales a una orden.
          * Permite seleccionar, comprimir y subir fotos nuevas, actualizando
@@ -1298,6 +1547,7 @@
          * @returns {void}
          */
         function setupAddMorePhotos(order) {
+            const context = accountContext();
             const preview = document.getElementById('add-more-preview');
             const uploadBtn = document.getElementById('upload-more-btn');
             const openModalBtn = document.getElementById('open-add-more-camera-modal');
@@ -1343,38 +1593,25 @@
             }
 
             uploadBtn.onclick = async () => {
+                if (uploadBtn.disabled || !isCurrentAccount(context)) return;
                 uploadBtn.disabled = true;
                 uploadBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Subiendo...`;
                 
                 try {
-                    const newUrls = [];
-                    for (const foto of morePhotosToUpload) {
-                        const fileName = `extra_${Date.now()}_${foto.name}`;
-                        const { data } = await supabaseClient.storage.from('photos').upload(`${currentUser.id}/${fileName}`, foto.blob);
-                        if (data) {
-                            const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
-                            newUrls.push(publicUrl);
-                        }
-                    }
-
-                    const currentFotos = order.fotos || [];
-                    const updatedFotos = [...currentFotos, ...newUrls];
-
-                    const { error } = await supabaseClient
-                        .from('work_orders')
-                        .update({ fotos: updatedFotos })
-                        .eq('id', order.id);
-
-                    if (error) throw error;
+                    const files = [...morePhotosToUpload];
+                    await addOrderPhotos(order.id, files, context);
+                    morePhotosToUpload = [];
                     
                     showNotification("Fotos añadidas con éxito.");
                     document.getElementById('view-order-modal').classList.add('hidden');
                     fetchOrders();
                 } catch (err) {
-                    showNotification("Error: " + err.message);
+                    if (isCurrentAccount(context)) showNotification(photoFailureMessage(err));
                 } finally {
-                    uploadBtn.disabled = false;
-                    uploadBtn.innerHTML = "Confirmar Subida";
+                    if (isCurrentAccount(context)) {
+                        uploadBtn.disabled = false;
+                        uploadBtn.innerHTML = "Confirmar Subida";
+                    }
                 }
             };
         }
@@ -1448,7 +1685,7 @@
 
         /**
          * Elimina una foto específica de una orden.
-         * Flujo: 1) Actualiza array en BD, 2) Elimina archivo de Storage.
+         * Elimina la referencia mediante una delta atómica; conserva el objeto de Storage.
          * Muestra confirmación antes de proceder.
          * @async
          * @function deleteSpecificPhoto
@@ -1458,38 +1695,16 @@
          * @returns {Promise<void>}
          */
         async function deleteSpecificPhoto(orderId, photoUrl, index) {
-            showNotification("¿Estás seguro de que deseas eliminar esta foto permanentemente?", true, async () => {
+            const context = accountContext();
+            showNotification("¿Eliminar esta foto de la orden? El archivo se conservará para no afectar respaldos u otros enlaces.", true, async () => {
                 try {
-                    // 1. Obtener la orden actualizada
-                    const { data: order } = await supabaseClient.from('work_orders').select('fotos').eq('id', orderId).single();
-                    if (!order) return;
-
-                    const updatedFotos = order.fotos.filter(f => f !== photoUrl);
-
-                    // 2. Borrar de la Base de Datos
-                    const { error: dbError } = await supabaseClient
-                        .from('work_orders')
-                        .update({ fotos: updatedFotos })
-                        .eq('id', orderId);
-
-                    if (dbError) throw dbError;
-
-                    // 3. Borrar del Storage (opcional pero recomendado)
-                    try {
-                        const pathParts = photoUrl.split('/photos/')[1];
-                        if (pathParts) {
-                            const filePath = decodeURIComponent(pathParts);
-                            await supabaseClient.storage.from('photos').remove([filePath]);
-                        }
-                    } catch (storageErr) {
-                        console.error("Error al borrar de storage:", storageErr);
-                    }
+                    await changeOrderPhotos(orderId, [], [photoUrl], context);
 
                     showNotification("Foto eliminada correctamente.");
                     document.getElementById('view-order-modal').classList.add('hidden');
                     fetchOrders();
                 } catch (err) {
-                    showNotification("Error: " + err.message);
+                    if (isCurrentAccount(context)) showNotification(photoFailureMessage(err));
                 }
             });
         }
@@ -1507,7 +1722,7 @@
         function openLightbox(url, e) {
             const lb = document.getElementById('lightbox-modal');
             const img = document.getElementById('lightbox-img');
-            img.src = url;
+            img.src = safePhotoURL(url);
             lb.classList.remove('hidden');
             if (e) e.stopPropagation();
         }
@@ -1681,7 +1896,7 @@
                 document.getElementById('pub-dominio').textContent = order.dominio;
                 document.getElementById('pub-cliente').textContent = order.nombre;
                 document.getElementById('pub-fecha').textContent = formatFecha(order.fecha);
-                document.getElementById('pub-trabajos').innerHTML = order.novedades.replace(/\n/g, '<br>');
+                document.getElementById('pub-trabajos').textContent = order.novedades ?? '';
                 
                 // Actualizar checks de adicionales
                 updatePubCheck('pub-garantia', order.garantia, 'Garantía');
@@ -1696,17 +1911,10 @@
                 const galeria = document.getElementById('pub-galeria');
                 galeria.innerHTML = '';
                 
-                if (order.fotos && order.fotos.length > 0) {
+                if (Array.isArray(order.fotos) && order.fotos.length > 0) {
                     galeriaSec.classList.remove('hidden');
                     order.fotos.forEach((f) => {
-                        const div = document.createElement('div');
-                        div.className = "relative aspect-square overflow-hidden rounded-xl border border-gray-100 shadow-sm group cursor-zoom-in";
-                        div.onclick = (e) => openLightbox(f, e);
-                        div.innerHTML = `
-                            <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
-                        `;
-                        galeria.appendChild(div);
+                        galeria.appendChild(createPhotoTile(f));
                     });
                 } else {
                     galeriaSec.classList.add('hidden');
@@ -1714,7 +1922,7 @@
                 
             } catch (err) {
                 console.error("Error cargando orden pública:", err);
-                showPublicError(`No se pudo cargar la orden. Asegúrate de tener conexión a Internet o de que la orden exista.<br><br><span class="text-xs text-gray-400">Detalles: ${err.message}</span>`);
+                showPublicError(`No se pudo cargar la orden. Asegúrate de tener conexión a Internet o de que la orden exista. Detalles: ${err.message}`);
             }
         }
         
@@ -1742,7 +1950,7 @@
          * Muestra pantalla de error en la vista pública del cliente.
          * Se usa cuando la orden no existe o hay problemas de conexión.
          * @function showPublicError
-         * @param {string} msg - Mensaje de error a mostrar (admite HTML)
+         * @param {string} msg - Mensaje de error mostrado como texto.
          * @returns {void}
          */
         function showPublicError(msg) {
@@ -1753,7 +1961,7 @@
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     <h2 class="text-xl font-bold text-gray-800">Error de Acceso</h2>
-                    <p class="text-gray-600 leading-relaxed">${msg}</p>
+                    <p class="text-gray-600 leading-relaxed">${escapeHTML(msg)}</p>
                     <a href="index.html" class="inline-block mt-4 bg-indigo-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all text-sm">
                         Ir al Inicio
                     </a>
@@ -1785,21 +1993,22 @@
          */
         function printWorkOrder(order) {
             const printWindow = window.open('', '_blank', 'height=600,width=800');
+            if (!printWindow) return showNotification('Permite las ventanas emergentes para imprimir.');
             printWindow.document.write('<html><head><title>Orden de Trabajo</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:sans-serif} @media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div id="print-area">');
             printWindow.document.write(`
                 <div class="p-8">
                     <div class="flex justify-between items-start mb-6 pb-4 border-b">
                         <div><h1 class="text-2xl font-bold">ORDEN DE TRABAJO</h1><p class="text-gray-600">Taller Mecánico (Online)</p></div>
-                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${formatFecha(order.fecha)}</p></div>
+                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${escapeHTML(order.order_number)}</p><p>Fecha: ${escapeHTML(formatFecha(order.fecha))}</p></div>
                     </div>
                     <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
-                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${order.nombre}</span></div>
-                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${order.telefono || 'N/A'}</span></div>
-                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${order.vehiculo}</span></div>
-                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${order.dominio}</span></div>
+                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${escapeHTML(order.nombre)}</span></div>
+                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${escapeHTML(order.telefono || 'N/A')}</span></div>
+                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${escapeHTML(order.vehiculo)}</span></div>
+                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${escapeHTML(order.dominio)}</span></div>
                     </div>
                     <h2 class="text-lg font-bold mb-2">Novedades y Trabajos a Realizar</h2>
-                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p>${order.novedades.replace(/\n/g, '<br>')}</p></div>
+                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p class="whitespace-pre-line">${escapeHTML(order.novedades)}</p></div>
                     
                     <div class="grid grid-cols-3 gap-4 mb-6 p-4 border rounded bg-gray-50">
                         <div><strong class="text-gray-500">Garantía:</strong> ${order.garantia ? 'SÍ' : 'NO'}</div>
@@ -2069,7 +2278,7 @@
          * Modo simple: muestra mensaje con botón OK.
          * Modo confirmación: muestra mensaje con botones Confirmar/Cancelar.
          * @function showNotification
-         * @param {string} msg - Mensaje a mostrar (admite HTML)
+         * @param {string} msg - Mensaje de texto; no admite HTML.
          * @param {boolean} [isConfirm=false] - Si true, muestra botones de confirmación
          * @param {Function|null} [callback=null] - Función a ejecutar al confirmar
          * @returns {void}
@@ -2078,7 +2287,7 @@
             const modal = document.getElementById('notification-modal');
             const message = document.getElementById('notification-message');
             const buttons = document.getElementById('modal-buttons');
-            message.innerHTML = msg;
+            message.textContent = msg;
             modal.classList.remove('hidden');
             buttons.innerHTML = '';
             if (isConfirm) {
@@ -2105,6 +2314,12 @@
          */
         const urlParams = new URLSearchParams(window.location.search);
         const orderIdParam = urlParams.get('id');
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            if (orderIdParam || session?.user?.id === currentUser?.id) return;
+            ++authRequest;
+            clearAccountState();
+            if (session?.user) setTimeout(() => checkUser(), 0);
+        });
         if (orderIdParam) {
             showPublicOrderView(orderIdParam);
         } else {

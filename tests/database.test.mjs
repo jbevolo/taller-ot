@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -20,6 +20,8 @@ const quote = value => `'${String(value).replaceAll("'", "''")}'`;
 const json = value => `${quote(JSON.stringify(value))}::jsonb`;
 const restore = (orders, owner = USER_A) =>
     `select public.restore_work_orders(${json(orders)}, '${owner}');`;
+const photos = (add = [], remove = [], id = ORDER_ID, owner = USER_A) =>
+    `select public.change_order_photos('${id}', ${json(add)}, ${json(remove)}, '${owner}');`;
 const asOwner = (sql, owner = USER_A) =>
     `set role authenticated; set request.jwt.claim.sub = '${owner}'; ${sql}`;
 
@@ -50,6 +52,25 @@ test('local PostgreSQL proves restore transaction rollback and ownership boundar
     const sql = input => execFileSync('psql', args, {
         input, encoding: 'utf8', env, stdio: ['pipe', 'pipe', 'pipe']
     }).trim();
+    const asyncSQL = (input, ready) => {
+        const child = spawn('psql', args, { env, stdio: ['pipe', 'pipe', 'pipe'] });
+        let output = '';
+        let errors = '';
+        let announced = false;
+        child.stdout.on('data', chunk => {
+            output += chunk;
+            if (!announced && output.includes('LOCK_HELD')) {
+                announced = true;
+                ready?.();
+            }
+        });
+        child.stderr.on('data', chunk => { errors += chunk; });
+        child.stdin.end(input);
+        return new Promise((resolve, reject) => {
+            child.on('error', reject);
+            child.on('exit', code => code === 0 ? resolve(output) : reject(new Error(errors)));
+        });
+    };
     let started = false;
 
     try {
@@ -111,7 +132,14 @@ test('local PostgreSQL proves restore transaction rollback and ownership boundar
                 'public.restore_work_orders(jsonb,uuid)', 'execute');`), 'f');
             assert.equal(sql(`select has_function_privilege('authenticated',
                 'public.restore_work_orders(jsonb,uuid)', 'execute');`), 't');
+            assert.equal(sql(`select not prosecdef from pg_proc where oid =
+                'public.change_order_photos(uuid,jsonb,jsonb,uuid)'::regprocedure;`), 't');
+            assert.equal(sql(`select has_function_privilege('anon',
+                'public.change_order_photos(uuid,jsonb,jsonb,uuid)', 'execute');`), 'f');
+            assert.equal(sql(`select has_function_privilege('authenticated',
+                'public.change_order_photos(uuid,jsonb,jsonb,uuid)', 'execute');`), 't');
             assert.throws(() => sql(`set role anon; ${restore([order()])}`), /permission denied/);
+            assert.throws(() => sql(`set role anon; ${photos()}`), /permission denied/);
         });
 
         await t.test('restore preserves stable IDs, dependents, defaults, and other owners', () => {
@@ -156,6 +184,58 @@ test('local PostgreSQL proves restore transaction rollback and ownership boundar
             }
             assert.throws(() => sql(asOwner(restore([order()], USER_B))), /owner mismatch/);
             assert.equal(sql('select jsonb_agg(to_jsonb(w) order by id) from work_orders w;'), before);
+        });
+
+        await t.test('photo deltas are idempotent and owner-bound', () => {
+            const a = 'https://example.test/a.jpg';
+            const b = 'https://example.test/b.jpg';
+            assert.deepEqual(JSON.parse(sql(asOwner(photos([a, b])))), [a, b]);
+            assert.deepEqual(JSON.parse(sql(asOwner(photos([a])))), [a, b]);
+            assert.deepEqual(JSON.parse(sql(asOwner(photos([], [a])))), [b]);
+            assert.deepEqual(JSON.parse(sql(asOwner(photos([], [a])))), [b]);
+            assert.throws(() => sql(asOwner(photos([], [], ORDER_ID, USER_B))), /owner mismatch/);
+            assert.throws(() => sql(asOwner(photos(
+                [], [], '22222222-2222-4222-8222-222222222222'
+            ))), /not found or not owned/);
+        });
+
+        async function runConcurrent(firstDelta, secondDelta) {
+            sql(`update work_orders set fotos = array['https://example.test/base.jpg'] where id = '${ORDER_ID}';`);
+            let announce;
+            const locked = new Promise(resolve => { announce = resolve; });
+            const first = asyncSQL(`begin; ${asOwner(firstDelta)}
+                \\echo LOCK_HELD
+                select pg_sleep(0.3); commit;`, announce);
+            await Promise.race([
+                locked,
+                first.then(() => { throw new Error('Lock marker missing'); })
+            ]);
+            const second = asyncSQL(asOwner(secondDelta));
+            await Promise.all([first, second]);
+            return JSON.parse(sql(asOwner(photos())));
+        }
+
+        await t.test('concurrent add/add deltas serialize without lost updates', async () => {
+            const result = await runConcurrent(
+                photos(['https://example.test/a.jpg']),
+                photos(['https://example.test/b.jpg'])
+            );
+            assert.deepEqual(result, [
+                'https://example.test/base.jpg',
+                'https://example.test/a.jpg',
+                'https://example.test/b.jpg'
+            ]);
+        });
+
+        await t.test('concurrent add/remove deltas serialize without restoring removed URLs', async () => {
+            const result = await runConcurrent(
+                photos(['https://example.test/a.jpg'], ['https://example.test/base.jpg']),
+                photos(['https://example.test/b.jpg'])
+            );
+            assert.deepEqual(result, [
+                'https://example.test/a.jpg',
+                'https://example.test/b.jpg'
+            ]);
         });
     } finally {
         if (started) {

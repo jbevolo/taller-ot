@@ -195,7 +195,88 @@ begin
 end;
 $function$;
 
+create or replace function public.change_order_photos(
+    p_order_id uuid, p_add jsonb, p_remove jsonb, p_user_id uuid
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+set lock_timeout = '5s'
+as $function$
+declare
+    owner_id uuid := auth.uid();
+    existing public.work_orders%rowtype;
+    photos jsonb;
+    merged jsonb;
+begin
+    if owner_id is null or owner_id is distinct from p_user_id then
+        raise exception 'Authenticated owner mismatch' using errcode = '42501';
+    end if;
+    if pg_catalog.jsonb_typeof(p_add) is distinct from 'array'
+       or pg_catalog.jsonb_typeof(p_remove) is distinct from 'array' then
+        raise exception 'Photo deltas must be arrays';
+    end if;
+    if exists (
+        select 1 from pg_catalog.jsonb_array_elements(p_add || p_remove) photo
+        where pg_catalog.jsonb_typeof(photo) <> 'string'
+           or (photo #>> '{}') !~ '^https://[^[:space:]]+$'
+           or pg_catalog.octet_length(photo #>> '{}') > 8192
+    ) then
+        raise exception 'Photo deltas must contain valid HTTPS URLs';
+    end if;
+
+    -- Serialize every delta against the latest committed photo list.
+    select * into existing
+    from public.work_orders
+    where id = p_order_id and user_id = owner_id
+    for update;
+    if not found then
+        raise exception 'Order not found or not owned' using errcode = '42501';
+    end if;
+
+    photos := coalesce(
+        nullif(pg_catalog.to_jsonb(existing) -> 'fotos', 'null'::jsonb),
+        '[]'::jsonb
+    );
+    if pg_catalog.jsonb_typeof(photos) <> 'array' then
+        raise exception 'Existing photos are not an array';
+    end if;
+    if pg_catalog.jsonb_array_length(p_add) = 0
+       and pg_catalog.jsonb_array_length(p_remove) = 0 then
+        return photos;
+    end if;
+    if pg_catalog.jsonb_array_length(p_add) > 0 and existing.status = 'Finalizada' then
+        raise exception 'Cannot add photos to a completed order';
+    end if;
+
+    -- Removal wins when a URL appears in both deltas. Grouping makes retries idempotent.
+    select coalesce(pg_catalog.jsonb_agg(value order by position), '[]'::jsonb)
+    into merged
+    from (
+        select value, pg_catalog.min(ordinality) as position
+        from pg_catalog.jsonb_array_elements_text(photos || p_add) with ordinality
+        where value not in (select pg_catalog.jsonb_array_elements_text(p_remove))
+        group by value
+    ) distinct_photos;
+
+    update public.work_orders
+    set fotos = (pg_catalog.jsonb_populate_record(
+        null::public.work_orders,
+        pg_catalog.jsonb_build_object('fotos', merged)
+    )).fotos
+    where id = p_order_id and user_id = owner_id;
+    if not found then
+        raise exception 'Photo update was rejected';
+    end if;
+    return merged;
+end;
+$function$;
+
 revoke all on function public.restore_work_orders(jsonb, uuid) from public, anon, authenticated;
+revoke all on function public.change_order_photos(uuid, jsonb, jsonb, uuid)
+    from public, anon, authenticated;
 grant execute on function public.restore_work_orders(jsonb, uuid) to authenticated;
+grant execute on function public.change_order_photos(uuid, jsonb, jsonb, uuid) to authenticated;
 notify pgrst, 'reload schema';
 commit;
