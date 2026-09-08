@@ -1851,6 +1851,116 @@
         const backupBtn = document.getElementById('backup-btn');
         const restoreBtn = document.getElementById('restore-btn');
         const restoreInput = document.getElementById('restore-input');
+        const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
+        const MAX_BACKUP_ORDERS = 10000;
+
+        function normalizeBackup(data, userId) {
+            if (!Array.isArray(data) || data.length === 0 || data.length > MAX_BACKUP_ORDERS) {
+                throw new Error(`El archivo debe contener entre 1 y ${MAX_BACKUP_ORDERS} órdenes.`);
+            }
+            let serialized;
+            try {
+                serialized = JSON.stringify(data);
+            } catch {
+                throw new Error('El archivo contiene una estructura que no se puede procesar.');
+            }
+            if (new TextEncoder().encode(serialized).byteLength > MAX_BACKUP_BYTES) {
+                throw new Error('El archivo supera el límite de 20 MiB.');
+            }
+            const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const flags = ['garantia', 'oblea', 'ph', 'nv', 'retencion', 'mangueras'];
+            const allowed = new Set(['id', 'user_id', 'order_number', 'orderNumber', 'fecha', 'nombre',
+                'telefono', 'vehiculo', 'dominio', 'novedades', ...flags, 'fotos', 'status',
+                'monto_cobrado', 'forma_pago', 'notas_extra', 'created_at', 'createdAt']);
+            const ids = new Set();
+
+            return data.map((source, index) => {
+                const label = `Orden ${index + 1}`;
+                if (!source || typeof source !== 'object' || Array.isArray(source)) {
+                    throw new Error(`${label}: cada entrada debe ser un objeto.`);
+                }
+                const unknown = Object.keys(source).find(key => !allowed.has(key));
+                if (unknown) throw new Error(`${label}: el campo "${unknown}" no está permitido.`);
+                if (source.user_id != null && source.user_id !== userId) {
+                    throw new Error(`${label}: pertenece a otro usuario.`);
+                }
+                const legacy = source.order_number == null && source.orderNumber != null;
+                if (source.order_number != null && source.orderNumber != null && source.order_number !== source.orderNumber) {
+                    throw new Error(`${label}: order_number y orderNumber no coinciden.`);
+                }
+                const orderNumber = source.order_number ?? source.orderNumber;
+                if (!Number.isSafeInteger(orderNumber) || orderNumber < 1) {
+                    throw new Error(`${label}: el número de orden debe ser un entero positivo.`);
+                }
+
+                let id = source.id;
+                if (legacy && (id == null || !uuid.test(id))) id = crypto.randomUUID();
+                if (typeof id !== 'string' || !uuid.test(id)) {
+                    throw new Error(`${label}: el ID debe ser un UUID válido.`);
+                }
+                id = id.toLowerCase();
+                if (ids.has(id)) throw new Error(`${label}: el ID está duplicado en el archivo.`);
+                ids.add(id);
+
+                const requiredText = {};
+                for (const field of ['nombre', 'vehiculo', 'dominio', 'novedades']) {
+                    if (typeof source[field] !== 'string' || !source[field].trim()) {
+                        throw new Error(`${label}: el campo "${field}" debe contener texto.`);
+                    }
+                    requiredText[field] = source[field];
+                }
+                if (typeof source.fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(source.fecha)) {
+                    throw new Error(`${label}: fecha debe usar el formato AAAA-MM-DD.`);
+                }
+                const parsedDate = new Date(source.fecha + 'T00:00:00Z');
+                if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== source.fecha) {
+                    throw new Error(`${label}: fecha no es una fecha calendario válida.`);
+                }
+
+                const normalizedFlags = {};
+                for (const field of flags) {
+                    const value = source[field] ?? false;
+                    if (typeof value !== 'boolean') throw new Error(`${label}: "${field}" debe ser booleano.`);
+                    normalizedFlags[field] = value;
+                }
+                const optionalText = {};
+                for (const field of ['telefono', 'forma_pago', 'notas_extra']) {
+                    const value = source[field] ?? '';
+                    if (typeof value !== 'string') throw new Error(`${label}: "${field}" debe ser texto.`);
+                    optionalText[field] = value;
+                }
+                const status = source.status ?? 'Abierta';
+                if (!['Abierta', 'Finalizada'].includes(status)) {
+                    throw new Error(`${label}: status debe ser "Abierta" o "Finalizada".`);
+                }
+                const fotos = source.fotos ?? [];
+                if (!Array.isArray(fotos)) throw new Error(`${label}: fotos debe ser un arreglo.`);
+                for (const photo of fotos) {
+                    if (typeof photo !== 'string' || photo.length > 8192 || !/^https:\/\/[^\s]+$/.test(photo)) {
+                        throw new Error(`${label}: cada foto debe ser una URL HTTPS válida.`);
+                    }
+                }
+                const amount = source.monto_cobrado ?? null;
+                if (amount !== null && (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0)) {
+                    throw new Error(`${label}: monto_cobrado debe ser un número no negativo.`);
+                }
+                if (source.created_at != null && source.createdAt != null && source.created_at !== source.createdAt) {
+                    throw new Error(`${label}: created_at y createdAt no coinciden.`);
+                }
+                const createdAt = source.created_at ?? source.createdAt;
+                if (createdAt != null && (typeof createdAt !== 'string' || !Number.isFinite(Date.parse(createdAt)))) {
+                    throw new Error(`${label}: la fecha de creación no es válida.`);
+                }
+
+                const normalized = {
+                    id, user_id: userId, order_number: orderNumber, fecha: source.fecha,
+                    ...requiredText, ...optionalText, ...normalizedFlags, fotos: [...fotos],
+                    status, monto_cobrado: amount
+                };
+                if (createdAt != null) normalized.created_at = createdAt;
+                return normalized;
+            });
+        }
 
         // --- EVENT LISTENERS: BACKUP/RESTORE ---
 
@@ -1884,21 +1994,27 @@
         restoreInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            const ownerId = currentUser?.id;
+            if (!ownerId) return showNotification('Debes iniciar sesión para restaurar un backup.');
+            if (file.size > MAX_BACKUP_BYTES) {
+                restoreInput.value = '';
+                return showNotification('No se puede restaurar: el archivo supera el límite de 20 MiB.');
+            }
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const data = JSON.parse(event.target.result);
-                    if (!Array.isArray(data)) throw new Error("Formato inválido");
+                    const data = normalizeBackup(JSON.parse(event.target.result), ownerId);
                     
                     showNotification(
-                        "<b>¡Atención!</b> Estás a punto de reemplazar tus datos en la nube con los del archivo. Esta acción no se puede deshacer. <br><br> ¿Deseas continuar?",
+                        "¡Atención! Se reemplazarán tus órdenes con las del archivo en una única transacción. Se conservarán los UUID existentes. ¿Deseas continuar?",
                         true,
-                        () => restoreToCloud(data)
+                        () => restoreToCloud(data, ownerId)
                     );
                 } catch (err) {
-                    showNotification("Error: El archivo no es válido.");
+                    showNotification("No se puede restaurar: " + err.message);
                 }
             };
+            reader.onerror = () => showNotification('No se puede restaurar: no fue posible leer el archivo.');
             reader.readAsText(file);
             restoreInput.value = '';
         });
@@ -1907,43 +2023,42 @@
 
         /**
          * Restaura un backup de órdenes a Supabase.
-         * Flujo: 1) Borra todas las órdenes actuales del usuario,
-         * 2) Inserta las órdenes del archivo JSON.
+         * Valida nuevamente y llama a una única transacción PostgreSQL.
          * Muestra progreso y resultado al usuario.
          * @async
          * @function restoreToCloud
          * @param {Array<Object>} data - Array de órdenes desde el archivo JSON
          * @returns {Promise<void>}
          */
-        async function restoreToCloud(data) {
+        let restoreInProgress = false;
+
+        async function restoreToCloud(data, ownerId = currentUser?.id) {
+            if (restoreInProgress) return;
+            restoreInProgress = true;
             showNotification("Restaurando datos en la nube... Por favor espera.");
             try {
-                // 1. Borrar órdenes actuales del usuario
-                const { error: delError } = await supabaseClient
-                    .from('work_orders')
-                    .delete()
-                    .eq('user_id', currentUser.id);
-                
-                if (delError) throw delError;
-
-                // 2. Preparar nuevos datos (limpiando IDs antiguos si es necesario)
-                const newOrders = data.map(order => {
-                    const { id, ...rest } = order; // Dejar que Supabase genere nuevos UUIDs
-                    return { ...rest, user_id: currentUser.id };
+                if (!ownerId || currentUser?.id !== ownerId) {
+                    throw new Error('La sesión cambió antes de confirmar la restauración.');
+                }
+                const orders = normalizeBackup(data, ownerId);
+                const { error } = await supabaseClient.rpc('restore_work_orders', {
+                    p_orders: orders,
+                    p_user_id: ownerId
                 });
-
-                // 3. Insertar en lotes
-                const { error: insError } = await supabaseClient
-                    .from('work_orders')
-                    .insert(newOrders);
-                
-                if (insError) throw insError;
+                if (currentUser?.id !== ownerId) {
+                    throw new Error('La sesión cambió durante la solicitud. Recarga y verifica las órdenes antes de reintentar.');
+                }
+                if (error) {
+                    throw new Error('La restauración segura no está disponible. Verifica que la migración restore_work_orders esté desplegada. ' + error.message);
+                }
 
                 showNotification("¡Restauración completada con éxito!");
-                fetchOrders();
+                await fetchOrders();
             } catch (err) {
                 console.error(err);
-                showNotification("Error durante la restauración: " + err.message);
+                showNotification("Restauración no confirmada: " + err.message);
+            } finally {
+                restoreInProgress = false;
             }
         }
 

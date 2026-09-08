@@ -1,0 +1,201 @@
+-- Apply manually only after completing the checks in database/README.md.
+-- This migration creates no tables, changes no RLS policies, and grants no table access.
+begin;
+
+do $preflight$
+declare
+    missing text;
+    command "char";
+begin
+    if to_regclass('public.work_orders') is null then
+        raise exception 'Existing public.work_orders table required; inspect the deployed schema first';
+    end if;
+    if to_regprocedure('auth.uid()') is null or to_regrole('authenticated') is null then
+        raise exception 'Supabase auth.uid() and authenticated role are required';
+    end if;
+    if not exists (
+        select 1 from pg_catalog.pg_class
+        where oid = 'public.work_orders'::regclass and relrowsecurity
+    ) then
+        raise exception 'Enable and audit owner-scoped RLS before deploying this function';
+    end if;
+
+    select pg_catalog.string_agg(required.name, ', ') into missing
+    from pg_catalog.unnest(array['id', 'user_id', 'order_number', 'fecha', 'nombre', 'telefono',
+        'vehiculo', 'dominio', 'novedades', 'garantia', 'oblea', 'ph', 'nv', 'retencion',
+        'mangueras', 'fotos', 'status', 'monto_cobrado', 'forma_pago', 'notas_extra',
+        'created_at']) required(name)
+    where not exists (
+        select 1 from pg_catalog.pg_attribute a
+        where a.attrelid = 'public.work_orders'::regclass and a.attname = required.name
+          and a.attnum > 0 and not a.attisdropped and a.attgenerated = '' and a.attidentity = ''
+    );
+    if missing is not null then
+        raise exception 'Missing, generated, or identity application columns: %', missing;
+    end if;
+    if (select pg_catalog.count(*) from pg_catalog.pg_attribute
+        where attrelid = 'public.work_orders'::regclass and attname in ('id', 'user_id')
+          and atttypid = 'uuid'::regtype) <> 2 then
+        raise exception 'id and user_id must be UUID columns';
+    end if;
+    if not exists (
+        select 1 from pg_catalog.pg_attribute
+        where attrelid = 'public.work_orders'::regclass and attname = 'fotos'
+          and atttypid in ('jsonb'::regtype, 'json'::regtype, 'text[]'::regtype)
+    ) then
+        raise exception 'Supported fotos types: jsonb, json, or text[]';
+    end if;
+    if not exists (
+        select 1 from pg_catalog.pg_constraint c
+        join pg_catalog.pg_attribute a on a.attrelid = c.conrelid and a.attname = 'id'
+        where c.conrelid = 'public.work_orders'::regclass and c.contype in ('p', 'u')
+          and c.conkey = array[a.attnum] and not c.condeferrable
+    ) then
+        raise exception 'A nondeferrable primary or unique constraint on id is required';
+    end if;
+    if not pg_catalog.has_table_privilege('authenticated', 'public.work_orders',
+        'SELECT, INSERT, UPDATE, DELETE') then
+        raise exception 'authenticated requires existing SELECT, INSERT, UPDATE, and DELETE privileges';
+    end if;
+
+    foreach command in array array['r'::"char", 'a'::"char", 'w'::"char", 'd'::"char"] loop
+        if not exists (
+            select 1 from pg_catalog.pg_policy p
+            where p.polrelid = 'public.work_orders'::regclass
+              and p.polcmd in ('*'::"char", command)
+              and (0::oid = any(p.polroles) or to_regrole('authenticated')::oid = any(p.polroles))
+              and (command not in ('r'::"char", 'd'::"char", 'w'::"char") or p.polqual is not null)
+              and (command not in ('a'::"char", 'w'::"char") or p.polwithcheck is not null)
+        ) then
+            raise exception 'An applicable authenticated RLS policy is required for command %', command;
+        end if;
+    end loop;
+end;
+$preflight$;
+
+create or replace function public.restore_work_orders(p_orders jsonb, p_user_id uuid)
+returns integer
+language plpgsql
+security invoker
+set search_path = ''
+set lock_timeout = '5s'
+as $function$
+declare
+    owner_id uuid := auth.uid();
+    item jsonb;
+    typed public.work_orders%rowtype;
+    kept_ids uuid[] := '{}';
+    columns_sql text;
+    updates_sql text;
+    affected integer;
+    allowed constant text[] := array['id', 'user_id', 'order_number', 'fecha', 'nombre',
+        'telefono', 'vehiculo', 'dominio', 'novedades', 'garantia', 'oblea', 'ph', 'nv',
+        'retencion', 'mangueras', 'fotos', 'status', 'monto_cobrado', 'forma_pago',
+        'notas_extra', 'created_at'];
+begin
+    if owner_id is null or owner_id is distinct from p_user_id then
+        raise exception 'Authenticated owner mismatch' using errcode = '42501';
+    end if;
+    if pg_catalog.jsonb_typeof(p_orders) is distinct from 'array' then
+        raise exception 'Backup must be an array';
+    end if;
+    if pg_catalog.jsonb_array_length(p_orders) not between 1 and 10000
+       or pg_catalog.octet_length(p_orders::text) > 20971520 then
+        raise exception 'Backup must contain 1..10000 orders and at most 20 MiB';
+    end if;
+
+    -- Validate every row and schema-dependent conversion before acquiring the write lock.
+    for item in select value from pg_catalog.jsonb_array_elements(p_orders) loop
+        if pg_catalog.jsonb_typeof(item) is distinct from 'object' then
+            raise exception 'Each backup entry must be an object';
+        end if;
+        if not (item ?& array['id', 'user_id', 'order_number', 'fecha', 'nombre', 'telefono',
+            'vehiculo', 'dominio', 'novedades', 'garantia', 'oblea', 'ph', 'nv', 'retencion',
+            'mangueras', 'fotos', 'status', 'monto_cobrado', 'forma_pago', 'notas_extra']) then
+            raise exception 'Missing required normalized order fields';
+        end if;
+        if exists (
+            select 1 from pg_catalog.jsonb_object_keys(item) as keys(key)
+            where not (key = any(allowed))
+        ) then
+            raise exception 'Unknown backup field';
+        end if;
+        if exists (
+            select 1 from pg_catalog.unnest(array['nombre', 'vehiculo', 'dominio', 'novedades']) fields(name)
+            where pg_catalog.jsonb_typeof(item -> name) is distinct from 'string'
+               or pg_catalog.btrim(item ->> name) = ''
+        ) then
+            raise exception 'Required order text must be nonempty strings';
+        end if;
+        if exists (
+            select 1 from pg_catalog.unnest(array['telefono', 'forma_pago', 'notas_extra']) fields(name)
+            where pg_catalog.jsonb_typeof(item -> name) is distinct from 'string'
+        ) then
+            raise exception 'Optional order text must be normalized strings';
+        end if;
+        if exists (
+            select 1 from pg_catalog.unnest(array['garantia', 'oblea', 'ph', 'nv', 'retencion', 'mangueras']) fields(name)
+            where pg_catalog.jsonb_typeof(item -> name) is distinct from 'boolean'
+        ) then
+            raise exception 'Order flags must be booleans';
+        end if;
+        if item ->> 'status' not in ('Abierta', 'Finalizada') then
+            raise exception 'Invalid order status';
+        end if;
+        if pg_catalog.jsonb_typeof(item -> 'fotos') is distinct from 'array' then
+            raise exception 'Photos must be an array';
+        end if;
+        if exists (
+            select 1 from pg_catalog.jsonb_array_elements(item -> 'fotos') photo
+            where pg_catalog.jsonb_typeof(photo) <> 'string'
+               or (photo #>> '{}') !~ '^https://[^[:space:]]+$'
+               or pg_catalog.octet_length(photo #>> '{}') > 8192
+        ) then
+            raise exception 'Photos must contain valid HTTPS URLs';
+        end if;
+        if item ? 'created_at' and pg_catalog.jsonb_typeof(item -> 'created_at') <> 'string' then
+            raise exception 'created_at must be a timestamp string';
+        end if;
+
+        -- PostgreSQL casts remain authoritative for UUID, date, timestamp, numeric, and schema constraints.
+        select * into typed from pg_catalog.jsonb_populate_record(null::public.work_orders, item);
+        if typed.id is null or typed.user_id is distinct from owner_id or typed.fecha is null
+           or typed.order_number is null or typed.order_number < 1 or typed.status is null
+           or (typed.monto_cobrado is not null and typed.monto_cobrado < 0) then
+            raise exception 'Invalid order identity, owner, date, number, status, or amount';
+        end if;
+        if typed.id = any(kept_ids) then
+            raise exception 'Duplicate order id';
+        end if;
+        kept_ids := pg_catalog.array_append(kept_ids, typed.id);
+    end loop;
+
+    -- One transaction covers all upserts and the final owner-scoped deletion.
+    lock table public.work_orders in share row exclusive mode;
+    for item in select value from pg_catalog.jsonb_array_elements(p_orders) loop
+        select pg_catalog.string_agg(pg_catalog.format('%I', key), ', ' order by key),
+               pg_catalog.string_agg(pg_catalog.format('%1$I = excluded.%1$I', key), ', ' order by key)
+                   filter (where key <> 'id')
+        into columns_sql, updates_sql
+        from pg_catalog.jsonb_object_keys(item) as keys(key);
+        execute pg_catalog.format(
+            'insert into public.work_orders (%1$s)
+             select %1$s from pg_catalog.jsonb_populate_record(null::public.work_orders, $1)
+             on conflict (id) do update set %2$s where work_orders.user_id = $2',
+            columns_sql, updates_sql
+        ) using item, owner_id;
+        get diagnostics affected = row_count;
+        if affected <> 1 then
+            raise exception 'Order is not owned by the authenticated user' using errcode = '42501';
+        end if;
+    end loop;
+    delete from public.work_orders
+    where user_id = owner_id and not (id = any(kept_ids));
+    return pg_catalog.cardinality(kept_ids);
+end;
+$function$;
+
+revoke all on function public.restore_work_orders(jsonb, uuid) from public, anon, authenticated;
+grant execute on function public.restore_work_orders(jsonb, uuid) to authenticated;
+notify pgrst, 'reload schema';
+commit;

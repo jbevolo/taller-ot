@@ -42,6 +42,9 @@ No hay paso de compilacion, bundler ni framework JavaScript. Toda la aplicacion 
 | `sample_backup.json` | Ejemplo de archivo de backup con formato de referencia |
 | `icon.png` | Icono de la PWA (512x512) |
 | `docs/SETUP.md` | Guia de configuracion del backend Supabase y checklist de despliegue |
+| `database/safe-order-operations.sql` | Migracion manual para restauracion transaccional segura |
+| `database/README.md` | Precondiciones, despliegue y rollback de la migracion |
+| `tests/*.test.mjs` | Pruebas enfocadas del frontend real y PostgreSQL local |
 | `README.md` | Este documento |
 
 ---
@@ -106,8 +109,9 @@ No hay paso de compilacion, bundler ni framework JavaScript. Toda la aplicacion 
 
 **Importar (Restaurar):**
 - Boton "Restaurar": selecciona un archivo JSON. Se muestra confirmacion antes de proceder (`index.html:1850-1876`).
-- La restauracion **borra todas las ordenes actuales del usuario** y luego inserta las ordenes del archivo. Los IDs originales se descartan; Supabase genera nuevos UUIDs (`index.html:1890-1920`).
-- **ADVERTENCIA OPERATIVA**: la restauracion reemplaza/elimina las ordenes actuales del usuario autenticado antes de completar la importacion. Hacer una copia de seguridad previa antes de restaurar. No restaurar archivos de fuentes no confiables.
+- La restauracion valida y normaliza todo el archivo antes de llamar a `restore_work_orders`. El RPC reemplaza solo las ordenes del propietario autenticado en una unica transaccion PostgreSQL y conserva los UUID validos.
+- Es obligatorio desplegar manualmente `database/safe-order-operations.sql` siguiendo `database/README.md`. **Este repositorio no afirma que la migracion ya este desplegada.** Si falta, la interfaz rechaza la restauracion y nunca vuelve al flujo destructivo DELETE-then-INSERT.
+- Limites: 1 a 10.000 ordenes y 20 MiB. Se rechazan campos desconocidos, propietarios ajenos, UUID actuales invalidos o duplicados, fechas/fotos invalidas y registros incompletos antes de mutar datos.
 
 **Formato de referencia** (`sample_backup.json`):
 ```json
@@ -127,7 +131,7 @@ No hay paso de compilacion, bundler ni framework JavaScript. Toda la aplicacion 
   }
 ]
 ```
-> Nota: este es el formato del archivo de ejemplo. El formato de las ordenes en la base de datos usa campos ligeramente diferentes (`order_number` en lugar de `orderNumber`, `created_at` en lugar de `createdAt`). El proceso de restauracion maneja ambos formatos al descartar los campos `id` y asignar el `user_id` del usuario actual.
+> Nota: el restore acepta el formato snake_case exportado actualmente y los alias legacy documentados `orderNumber` / `createdAt`. Los UUID validos se preservan para mantener enlaces compartidos. El ID de texto del ejemplo legacy se reemplaza por un UUID porque nunca fue una identidad valida.
 
 ---
 

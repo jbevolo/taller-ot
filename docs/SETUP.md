@@ -85,7 +85,7 @@ CREATE TABLE public.work_orders (
 | `notas_extra` | Texto libre, opcional, al finalizar | `index.html:1531` |
 | `created_at` | Generado automaticamente por Supabase | Default de la tabla |
 
-> Nota: este es el esquema observado en el codigo fuente. El repositorio no versiona migraciones de base de datos. Si se realizan cambios en el esquema, se debe mantener la compatibilidad con el frontend o actualizar `index.html` en consecuencia.
+> Nota: este es el esquema observado en el codigo fuente. El repositorio versiona `database/safe-order-operations.sql` exclusivamente para crear el RPC de restauracion; no crea ni modifica esta tabla ni sus politicas RLS.
 
 ---
 
@@ -138,6 +138,7 @@ La tabla `work_orders` debe tener RLS habilitado. Las politicas actuales segun e
    - [ ] Tabla `work_orders` creada con el esquema documentado.
    - [ ] RLS habilitado en `work_orders` con las politicas descritas.
    - [ ] Bucket `photos` creado (publico o con politicas de lectura publica + escritura autenticada).
+   - [ ] Revisar y aplicar manualmente `database/safe-order-operations.sql` siguiendo `database/README.md`. La migracion debe probarse primero en staging y no se considera desplegada por estar en el repositorio.
 
 2. **Frontend**
    - [ ] Valores de `SUPABASE_URL` y `SUPABASE_ANON_KEY` actualizados en `index.html` (lineas 464-471).
@@ -160,6 +161,6 @@ La tabla `work_orders` debe tener RLS habilitado. Las politicas actuales segun e
 
 ## Notas
 
-- El repositorio no versiona migraciones de base de datos. Los cambios de esquema deben gestionarse desde el dashboard de Supabase o con herramientas externas.
+- La unica migracion versionada, `database/safe-order-operations.sql`, agrega el RPC transaccional de restore y falla si no encuentra el esquema, privilegios y RLS esperados. Los demas cambios de esquema deben gestionarse como migraciones revisadas por separado.
 - La clave anon es segura para el frontend; las politicas RLS protegen el acceso a los datos. No exponer la service_role key en el frontend.
 - El numero de orden se genera en el navegador con max+1; en uso concurrente pueden producirse colisiones. Para evitarlo, se podria usar un contador secuencial en la base de datos o una funcion RPC.
