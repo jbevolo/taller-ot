@@ -73,6 +73,71 @@ begin
 end;
 $preflight$;
 
+alter table public.work_orders
+    add column if not exists verification_checklist jsonb not null default '{}'::jsonb,
+    add column if not exists verification_files text[] not null default '{}';
+
+create or replace function public.verification_checklist_is_valid(value jsonb)
+returns boolean
+language sql
+immutable
+strict
+set search_path = ''
+as $function$
+    select value = '{}'::jsonb or (
+        pg_catalog.jsonb_typeof(value) = 'object'
+        and value ?& array['REGULADOR', 'MANGUERAS GNC', 'FILTRO DE GAS', 'CAÑO ALTA PRESION',
+            'MANGUERAS AGUA', 'CUNA', 'CILINDRO', 'VALVULA CILINDRO', 'RETENCION',
+            'NIPLES Y VIROLAS', 'SISTEMA VENTEO', 'CABLEADO VALVULA']
+        and not exists (
+            select 1 from pg_catalog.jsonb_object_keys(value) as keys(key)
+            where key <> all(array['REGULADOR', 'MANGUERAS GNC', 'FILTRO DE GAS', 'CAÑO ALTA PRESION',
+                'MANGUERAS AGUA', 'CUNA', 'CILINDRO', 'VALVULA CILINDRO', 'RETENCION',
+                'NIPLES Y VIROLAS', 'SISTEMA VENTEO', 'CABLEADO VALVULA'])
+        )
+        and not exists (
+            select 1 from pg_catalog.jsonb_each(value) entry(key, item)
+            where pg_catalog.jsonb_typeof(item) <> 'object'
+               or not (item ?& array['status', 'note'])
+               or exists (
+                   select 1 from pg_catalog.jsonb_object_keys(item) item_key(key)
+                   where item_key.key not in ('status', 'note')
+               )
+               or (item -> 'status' <> 'null'::jsonb and item ->> 'status' not in ('OK', 'NO OK', 'N/A'))
+               or pg_catalog.jsonb_typeof(item -> 'note') <> 'string'
+        )
+    );
+$function$;
+
+create or replace function public.verification_files_are_valid(value text[])
+returns boolean
+language sql
+immutable
+strict
+set search_path = ''
+as $function$
+    select not exists (
+        select 1 from pg_catalog.unnest(value) file_path
+        where file_path !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/verification/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|pdf|xls|xlsx)$'
+           or pg_catalog.octet_length(file_path) > 8192
+    );
+$function$;
+
+do $constraints$
+begin
+    if not exists (select 1 from pg_catalog.pg_constraint where conname = 'work_orders_verification_checklist_valid' and conrelid = 'public.work_orders'::regclass) then
+        alter table public.work_orders
+            add constraint work_orders_verification_checklist_valid
+            check (public.verification_checklist_is_valid(verification_checklist)) not valid;
+    end if;
+    if not exists (select 1 from pg_catalog.pg_constraint where conname = 'work_orders_verification_files_valid' and conrelid = 'public.work_orders'::regclass) then
+        alter table public.work_orders
+            add constraint work_orders_verification_files_valid
+            check (public.verification_files_are_valid(verification_files)) not valid;
+    end if;
+end;
+$constraints$;
+
 create or replace function public.restore_work_orders(p_orders jsonb, p_user_id uuid)
 returns integer
 language plpgsql
@@ -90,8 +155,8 @@ declare
     affected integer;
     allowed constant text[] := array['id', 'user_id', 'order_number', 'fecha', 'nombre',
         'telefono', 'vehiculo', 'dominio', 'novedades', 'garantia', 'oblea', 'ph', 'nv',
-        'retencion', 'mangueras', 'fotos', 'status', 'monto_cobrado', 'forma_pago',
-        'notas_extra', 'created_at'];
+        'retencion', 'mangueras', 'fotos', 'verification_checklist', 'verification_files',
+        'status', 'monto_cobrado', 'forma_pago', 'notas_extra', 'created_at'];
 begin
     if owner_id is null or owner_id is distinct from p_user_id then
         raise exception 'Authenticated owner mismatch' using errcode = '42501';
@@ -114,6 +179,10 @@ begin
             'mangueras', 'fotos', 'status', 'monto_cobrado', 'forma_pago', 'notas_extra']) then
             raise exception 'Missing required normalized order fields';
         end if;
+        item := item || pg_catalog.jsonb_build_object(
+            'verification_checklist', case when item ? 'verification_checklist' then item -> 'verification_checklist' else '{}'::jsonb end,
+            'verification_files', case when item ? 'verification_files' then item -> 'verification_files' else '[]'::jsonb end
+        );
         if exists (
             select 1 from pg_catalog.jsonb_object_keys(item) as keys(key)
             where not (key = any(allowed))
@@ -153,6 +222,23 @@ begin
         ) then
             raise exception 'Photos must contain valid HTTPS URLs';
         end if;
+        if pg_catalog.jsonb_typeof(item -> 'verification_checklist') is distinct from 'object' then
+            raise exception 'Verification checklist must be an object';
+        end if;
+        if not public.verification_checklist_is_valid(item -> 'verification_checklist') then
+            raise exception 'Invalid verification checklist';
+        end if;
+        if pg_catalog.jsonb_typeof(item -> 'verification_files') is distinct from 'array' then
+            raise exception 'Verification files must be an array';
+        end if;
+        if exists (
+            select 1 from pg_catalog.jsonb_array_elements(item -> 'verification_files') file_path
+            where pg_catalog.jsonb_typeof(file_path) <> 'string'
+        ) or not public.verification_files_are_valid(array(
+            select file_path #>> '{}' from pg_catalog.jsonb_array_elements(item -> 'verification_files') file_path
+        )) then
+            raise exception 'Verification files must contain safe storage paths';
+        end if;
         if item ? 'created_at' and pg_catalog.jsonb_typeof(item -> 'created_at') <> 'string' then
             raise exception 'created_at must be a timestamp string';
         end if;
@@ -173,6 +259,10 @@ begin
     -- One transaction covers all upserts and the final owner-scoped deletion.
     lock table public.work_orders in share row exclusive mode;
     for item in select value from pg_catalog.jsonb_array_elements(p_orders) loop
+        item := item || pg_catalog.jsonb_build_object(
+            'verification_checklist', case when item ? 'verification_checklist' then item -> 'verification_checklist' else '{}'::jsonb end,
+            'verification_files', case when item ? 'verification_files' then item -> 'verification_files' else '[]'::jsonb end
+        );
         select pg_catalog.string_agg(pg_catalog.format('%I', key), ', ' order by key),
                pg_catalog.string_agg(pg_catalog.format('%1$I = excluded.%1$I', key), ', ' order by key)
                    filter (where key <> 'id')

@@ -6,7 +6,7 @@ Referencia tecnica del backend Supabase, esquema de base de datos, politicas de 
 
 ## Requisitos
 
-- Proyecto Supabase activo (https://supabase.com).
+- Proyecto Supabase activo (<https://supabase.com>).
 - Auth habilitado en el proyecto Supabase (Providers > Email).
 - Bucket de Storage creado y configurado.
 - Tabla `work_orders` creada en el esquema `public`.
@@ -51,6 +51,8 @@ CREATE TABLE public.work_orders (
     retencion     boolean DEFAULT false,
     mangueras     boolean DEFAULT false,
     fotos         text[],
+    verification_checklist jsonb DEFAULT '{}'::jsonb,
+    verification_files text[] DEFAULT '{}',
     status        text DEFAULT 'Abierta',
     monto_cobrado numeric,
     forma_pago    text,
@@ -62,7 +64,7 @@ CREATE TABLE public.work_orders (
 **Campos utilizados en index.html:**
 
 | Campo | Uso en la aplicacion | Referencia |
-|-------|---------------------|-----------|
+| ------- | --------------------- | ----------- |
 | `id` | UUID generado automaticamente, clave primaria | `index.html:1167` (delete por id) |
 | `user_id` | Se asigna `currentUser.id` al insertar | `index.html:1121` |
 | `order_number` | Auto-calculado (max+1) en el navegador | `index.html:897`, `index.html:1122` |
@@ -78,8 +80,10 @@ CREATE TABLE public.work_orders (
 | `nv` | Checkbox booleano | `index.html:1132` |
 | `retencion` | Checkbox booleano | `index.html:1133` |
 | `mangueras` | Checkbox booleano | `index.html:1134` |
-| `fotos` | Array de URLs publicas (text[]) | `index.html:1135` |
-| `status` | `'Abierta'` o `'Finalizada'` | `index.html:1136`, `index.html:1527` |
+| `fotos` | Array de URLs publicas (text[]) | `index.html` |
+| `verification_checklist` | Planilla digital opcional con items canonicos y estado OK/NO OK/N/A/pendiente | `index.html` |
+| `verification_files` | Rutas seguras de adjuntos de planilla (JPG, PNG, PDF, XLS, XLSX) en Storage | `index.html` |
+| `status` | `'Abierta'` o `'Finalizada'` | `index.html` |
 | `monto_cobrado` | Numeric, se registra al finalizar | `index.html:1529` |
 | `forma_pago` | Texto: Efectivo/Transferencia/Debito/Credito | `index.html:1530` |
 | `notas_extra` | Texto libre, opcional, al finalizar | `index.html:1531` |
@@ -112,7 +116,7 @@ La tabla `work_orders` debe tener RLS habilitado. Las politicas actuales segun e
 
 - **Nombre del bucket**: `photos` (`index.html:1105`)
 - **Tipo**: publico (las URLs de las fotos se obtienen via `getPublicUrl`, `index.html:1114`)
-- **Rutas de subida**: `{user_id}/{timestamp}_{filename}` para fotos nuevas (`index.html:1106`), `{user_id}/extra_{timestamp}_{filename}` para fotos adicionales (`index.html:1324`)
+- **Rutas de subida**: fotos del trabajo bajo el namespace `{user_id}/`; adjuntos de planilla bajo `{user_id}/verification/{uuid}.{ext}` conservando solo extensiones permitidas.
 - **Permisos necesarios**:
   - El usuario autenticado debe poder subir archivos a su propia carpeta (`user_id/`).
   - La lectura publica debe estar habilitada para que las URLs de las fotos funcionen en la vista publica del cliente y en WhatsApp.
