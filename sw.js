@@ -6,14 +6,14 @@
  */
 
 /** @type {string} Nombre del cache actual */
-const CACHE_NAME = "taller-ot-v3";
+const CACHE_NAME = 'taller-ot-v1';
 
 /** @type {string[]} Assets a precachear para uso offline */
 const ASSETS = [
- "index.html",
- "manifest.json",
- "https://cdn.tailwindcss.com",
- "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+  'index.html',
+  'manifest.json',
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
 /**
@@ -21,8 +21,10 @@ const ASSETS = [
  * Precachea todos los assets definidos en ASSETS para disponibilidad offline.
  * @param {ExtendableEvent} e - Evento de instalación
  */
-self.addEventListener("install", (e) => {
- e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
 });
 
 /**
@@ -30,6 +32,8 @@ self.addEventListener("install", (e) => {
  * Estrategia: Cache-First (cache primero, fallback a red).
  * @param {FetchEvent} e - Evento de petición HTTP
  */
-self.addEventListener("fetch", (e) => {
- e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
+  );
 });

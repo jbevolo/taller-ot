@@ -27,11 +27,11 @@
             <form id="auth-form" class="space-y-4">
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
-                    <input type="email" id="email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                    <input type="email" id="email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500" required>
                 </div>
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
-                    <input type="password" id="password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                    <input type="password" id="password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500" required>
                 </div>
                 <div class="pt-2 space-y-3">
                     <button type="button" id="login-btn" class="w-full flex justify-center items-center bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700">
@@ -110,12 +110,6 @@
                         <div id="pub-mangueras" class="flex items-center text-sm text-gray-400"><i class="fas fa-circle mr-2 text-[8px]"></i> Mangueras</div>
                     </div>
 
-                    <!-- Planilla de Verificación -->
-                    <div id="pub-verification-section" class="hidden">
-                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Planilla de verificación</h2>
-                        <div id="pub-verification-content" class="space-y-3"></div>
-                    </div>
-
                     <!-- Galería de Fotos -->
                     <div id="pub-galeria-section" class="hidden">
                         <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Galería de Fotos del Vehículo</h2>
@@ -162,12 +156,12 @@
     <!-- Incluye: backup/restore, búsqueda, y acciones por orden. -->
     <div id="app-container" class="hidden">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-            <header class="flex justify-between items-center mb-8">
+            <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div class="text-left">
                     <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Gestión de Taller <span class="text-indigo-600">Online</span></h1>
                     <p id="user-display" class="text-gray-600 mt-2"></p>
                 </div>
-                <div class="flex items-center space-x-2 sm:space-x-4">
+                <div class="flex flex-wrap items-center gap-2">
                     <button id="restore-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">
                         <i class="fas fa-upload mr-2"></i>Restaurar
                     </button>
@@ -186,90 +180,78 @@
                 <div class="lg:col-span-1">
                     <div id="form-container" class="bg-white p-6 rounded-xl shadow-lg form-section">
                         <h2 class="text-2xl font-bold mb-6 border-b pb-3">Nueva Orden</h2>
-                        <form id="work-order-form" class="space-y-4">
+                        <form id="work-order-form" class="space-y-5">
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="order-number" class="block text-sm font-medium text-gray-700">N° Orden</label>
-                                    <input type="number" id="order-number" class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md p-2" readonly>
+                                    <input type="number" id="order-number" class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md p-3" readonly>
                                 </div>
                                 <div>
                                     <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha</label>
-                                    <div class="relative mt-1 rounded-md border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-indigo-500">
-                                        <span id="fecha-display" class="block w-full p-2 pr-10 text-gray-800 pointer-events-none">DD-MM-AAAA</span>
-                                        <input type="date" id="fecha" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required aria-label="Fecha">
-                                        <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none" aria-hidden="true"></i>
-                                    </div>
+                                    <input type="date" id="fecha" class="mt-1 block w-full border-gray-300 rounded-md p-3" required>
                                 </div>
                             </div>
                             <div>
                                 <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
-                                <input type="text" id="nombre" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                                <input type="text" id="nombre" class="mt-1 block w-full border-gray-300 rounded-md p-3" required>
                             </div>
                             <div>
                                 <label for="telefono" class="block text-sm font-medium text-gray-700">Teléfono</label>
-                                <input type="tel" id="telefono" class="mt-1 block w-full border-gray-300 rounded-md p-2">
+                                <input type="tel" id="telefono" class="mt-1 block w-full border-gray-300 rounded-md p-3">
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="vehiculo" class="block text-sm font-medium text-gray-700">Vehículo</label>
-                                    <input type="text" id="vehiculo" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                                    <input type="text" id="vehiculo" class="mt-1 block w-full border-gray-300 rounded-md p-3" required>
                                 </div>
                                 <div>
                                     <label for="dominio" class="block text-sm font-medium text-gray-700">Dominio</label>
-                                    <input type="text" id="dominio" class="mt-1 block w-full border-gray-300 rounded-md p-2" required>
+                                    <input type="text" id="dominio" class="mt-1 block w-full border-gray-300 rounded-md p-3" required>
                                 </div>
                             </div>
                             <div>
                                 <label for="novedades" class="block text-sm font-medium text-gray-700">Trabajos a realizar</label>
-                                <textarea id="novedades" rows="3" class="mt-1 block w-full border-gray-300 rounded-md p-2" required></textarea>
+                                <textarea id="novedades" rows="3" class="mt-1 block w-full border-gray-300 rounded-md p-3" required></textarea>
                             </div>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-gray-50 p-3 rounded-lg border">
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="garantia" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                                    <label for="garantia" class="ml-2 block text-xs text-gray-700">En garantía</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg border">
+                                <div class="flex items-center py-1">
+                                    <input type="checkbox" id="garantia" class="h-5 w-5 text-indigo-600 border-gray-300 rounded">
+                                    <label for="garantia" class="ml-2 block text-sm text-gray-700">En garantía</label>
                                 </div>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="oblea" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                                    <label for="oblea" class="ml-2 block text-xs text-gray-700">Oblea</label>
+                                <div class="flex items-center py-1">
+                                    <input type="checkbox" id="oblea" class="h-5 w-5 text-indigo-600 border-gray-300 rounded">
+                                    <label for="oblea" class="ml-2 block text-sm text-gray-700">Oblea</label>
                                 </div>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="ph" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                                    <label for="ph" class="ml-2 block text-xs text-gray-700">PH</label>
+                                <div class="flex items-center py-1">
+                                    <input type="checkbox" id="ph" class="h-5 w-5 text-indigo-600 border-gray-300 rounded">
+                                    <label for="ph" class="ml-2 block text-sm text-gray-700">PH</label>
                                 </div>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="nv" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                                    <label for="nv" class="ml-2 block text-xs text-gray-700">NV</label>
+                                <div class="flex items-center py-1">
+                                    <input type="checkbox" id="nv" class="h-5 w-5 text-indigo-600 border-gray-300 rounded">
+                                    <label for="nv" class="ml-2 block text-sm text-gray-700">NV</label>
                                 </div>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="retencion" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                                    <label for="retencion" class="ml-2 block text-xs text-gray-700">Retención</label>
+                                <div class="flex items-center py-1">
+                                    <input type="checkbox" id="retencion" class="h-5 w-5 text-indigo-600 border-gray-300 rounded">
+                                    <label for="retencion" class="ml-2 block text-sm text-gray-700">Retención</label>
                                 </div>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="mangueras" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                                    <label for="mangueras" class="ml-2 block text-xs text-gray-700">Mangueras</label>
+                                <div class="flex items-center py-1">
+                                    <input type="checkbox" id="mangueras" class="h-5 w-5 text-indigo-600 border-gray-300 rounded">
+                                    <label for="mangueras" class="ml-2 block text-sm text-gray-700">Mangueras</label>
                                 </div>
-                            </div>
-
-                            <!-- Planilla de Verificación -->
-                            <div class="pt-4 border-t">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Planilla de verificación (opcional)</label>
-                                <div id="verification-checklist-form" class="space-y-2 max-h-72 overflow-y-auto border rounded-lg p-3 bg-gray-50"></div>
-                                <input type="file" id="verification-files-input" class="mt-3 block w-full text-xs text-gray-600" accept=".jpg,.jpeg,.png,.pdf,.xls,.xlsx,image/jpeg,image/png,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
-                                <div id="verification-files-preview" class="mt-2 text-xs text-gray-500"></div>
                             </div>
 
                             <!-- Sección de Fotos -->
                             <div class="pt-4 border-t">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Fotos del Trabajo</label>
                                 <div class="flex items-center justify-center w-full">
-                                    <div id="open-camera-modal" class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                                    <div id="open-camera-modal" class="flex flex-col items-center justify-center w-full h-32 sm:h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                                         <div class="flex flex-col items-center justify-center">
-                                            <i class="fas fa-camera text-xl text-gray-400"></i>
-                                            <p class="text-xs text-gray-500 mt-1">Subir Fotos (Máx 5)</p>
+                                            <i class="fas fa-camera text-2xl text-gray-400"></i>
+                                            <p class="text-sm text-gray-500 mt-2">Subir Fotos (Máx 5)</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div id="fotos-preview" class="grid grid-cols-5 gap-1 mt-2"></div>
+                                <div id="fotos-preview" class="grid grid-cols-5 gap-2 mt-3"></div>
                             </div>
 
                             <button type="button" id="print-draft-btn" class="w-full flex justify-center items-center bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 mb-2">
@@ -285,21 +267,22 @@
                 <!-- Columna de la Base de Datos -->
                 <div class="lg:col-span-2">
                     <div id="db-container" class="bg-white p-6 rounded-xl shadow-lg db-section">
-                        <div class="flex justify-between items-center mb-4 border-b pb-3">
-                            <h2 class="text-2xl font-bold">Órdenes Online</h2>
-                            <div class="relative w-64">
+                        <div class="flex justify-between items-center mb-4 border-b pb-3 gap-3">
+                            <h2 class="text-xl sm:text-2xl font-bold">Órdenes Online</h2>
+                            <div class="relative w-full sm:w-64">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                                     <i class="fas fa-search text-gray-400"></i>
                                 </span>
-                                <input type="text" id="search-input" placeholder="Buscar..." class="w-full pl-10 p-2 border border-gray-300 rounded-md">
+                                <input type="text" id="search-input" placeholder="Buscar..." class="w-full pl-10 p-3 border border-gray-300 rounded-md">
                             </div>
                         </div>
-                        <div class="overflow-x-auto">
+                        <!-- Desktop: Table View (hidden on mobile) -->
+                        <div class="overflow-x-auto hidden lg:block">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N°</th>
-                                        <th class="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Fecha</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehículo</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dominio</th>
@@ -309,9 +292,14 @@
                                     </tr>
                                 </thead>
                                 <tbody id="orders-table-body" class="bg-white divide-y divide-gray-200">
-                                    <tr><td colspan="6" class="text-center p-8 text-gray-500">Cargando datos...</td></tr>
+                                    <tr><td colspan="8" class="text-center p-8 text-gray-500">Cargando datos...</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Mobile: Card View (shown only on screens smaller than lg) -->
+                        <div id="orders-cards-container" class="lg:hidden space-y-3">
+                            <!-- Cards rendered dynamically -->
                         </div>
                         <!-- Controles de paginación -->
                         <div id="pagination-controls" class="hidden mt-4 pt-4 border-t border-gray-200 px-2 pb-2">
@@ -325,9 +313,9 @@
     <!-- ==================== MODALES ==================== -->
     <!-- Modal de notificaciones (éxito/error/confirmación) -->
     <div id="notification-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
+        <div class="bg-white p-6 rounded-xl shadow-2xl text-center max-w-sm w-full">
             <p id="notification-message" class="text-gray-800"></p>
-            <div id="modal-buttons" class="mt-4"></div>
+            <div id="modal-buttons" class="mt-4 flex flex-wrap justify-center gap-2"></div>
         </div>
     </div>
 
@@ -336,21 +324,21 @@
         <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
             <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Seleccionar Fuente de Foto</h3>
             <div class="space-y-3">
-                <button id="camera-back-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                <button id="camera-back-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all min-h-[44px]">
                     <span class="text-2xl">📷</span>
                     <div class="text-left">
                         <p class="font-bold text-gray-800">Cámara Trasera</p>
                         <p class="text-xs text-gray-500">Principal - Para fotos del trabajo</p>
                     </div>
                 </button>
-                <button id="camera-front-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                <button id="camera-front-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all min-h-[44px]">
                     <span class="text-2xl">🤳</span>
                     <div class="text-left">
                         <p class="font-bold text-gray-800">Cámara Frontal</p>
                         <p class="text-xs text-gray-500">Selfie - Para documentación</p>
                     </div>
                 </button>
-                <button id="camera-gallery-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                <button id="camera-gallery-btn" class="w-full flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all min-h-[44px]">
                     <span class="text-2xl">🖼️</span>
                     <div class="text-left">
                         <p class="font-bold text-gray-800">Galería de Fotos</p>
@@ -358,7 +346,7 @@
                     </div>
                 </button>
             </div>
-            <button id="camera-cancel-btn" class="w-full mt-4 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors">
+            <button id="camera-cancel-btn" class="w-full mt-4 py-4 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors min-h-[44px]">
                 Cancelar
             </button>
         </div>
@@ -371,27 +359,18 @@
 
     <!-- Modal de detalle de orden (vista completa con fotos y acciones) -->
     <div id="view-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">Detalles de la Orden</h2>
-                <button onclick="document.getElementById('view-order-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                <h2 class="text-xl sm:text-2xl font-bold">Detalles de la Orden</h2>
+                <button onclick="document.getElementById('view-order-modal').classList.add('hidden')" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <div id="view-order-content" class="space-y-4"></div>
             <div id="view-order-actions" class="mt-6 flex flex-col space-y-2">
-                <button id="view-whatsapp-btn" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 flex justify-center items-center">
+                <button id="view-whatsapp-btn" class="w-full min-h-[44px] bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 flex justify-center items-center">
                     <i class="fab fa-whatsapp mr-2 text-xl"></i> Compartir por WhatsApp
                 </button>
             </div>
-            <div id="edit-verification-section" class="mt-6 pt-4 border-t hidden">
-                <h3 class="text-sm font-bold text-gray-700 mb-3">Editar planilla de verificación</h3>
-                <div id="edit-verification-checklist" class="space-y-2 max-h-72 overflow-y-auto border rounded-lg p-3 bg-gray-50"></div>
-                <div id="edit-verification-files" class="mt-3 text-xs text-gray-600 space-y-1"></div>
-                <input type="file" id="edit-verification-files-input" class="mt-3 block w-full text-xs text-gray-600" accept=".jpg,.jpeg,.png,.pdf,.xls,.xlsx,image/jpeg,image/png,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
-                <button id="save-verification-btn" class="w-full mt-3 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">
-                    Guardar planilla de verificación
-                </button>
-            </div>
-                <div id="add-photos-section" class="mt-6 pt-4 border-t hidden">
+            <div id="add-photos-section" class="mt-6 pt-4 border-t hidden">
                 <label class="block text-sm font-medium text-gray-700 mb-2 font-bold">Añadir más fotos a esta orden</label>
                 <!-- Inputs ocultos para cada fuente de cámara -->
                 <input type="file" id="add-more-input-back" class="hidden" accept="image/*" capture="environment" multiple>
@@ -399,12 +378,12 @@
                 <input type="file" id="add-more-input-gallery" class="hidden" accept="image/*" multiple>
                 <!-- Botón que abre el modal de selección -->
                 <div id="open-add-more-camera-modal" class="w-full">
-                    <button type="button" class="bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded-lg hover:bg-indigo-200 w-full flex justify-center items-center">
+                    <button type="button" class="bg-indigo-100 text-indigo-700 font-bold py-3 px-4 rounded-lg hover:bg-indigo-200 w-full flex justify-center items-center min-h-[44px]">
                         <i class="fas fa-plus-circle mr-2"></i> Seleccionar Fotos Nuevas
                     </button>
                 </div>
-                <div id="add-more-preview" class="grid grid-cols-5 gap-1 mt-2"></div>
-                <button id="upload-more-btn" class="hidden w-full mt-2 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">
+                <div id="add-more-preview" class="grid grid-cols-5 gap-2 mt-3"></div>
+                <button id="upload-more-btn" class="hidden w-full mt-3 bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 min-h-[44px]">
                     Confirmar Subida
                 </button>
             </div>
@@ -413,25 +392,25 @@
 
     <!-- Modal Visor de Imágenes (Lightbox) - Click para cerrar -->
     <div id="lightbox-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-[60] flex justify-center items-center p-4" onclick="this.classList.add('hidden')">
-        <button class="absolute top-4 right-4 text-white text-4xl">&times;</button>
+        <button class="absolute top-4 right-4 text-white text-4xl min-w-[44px] min-h-[44px] flex items-center justify-center">&times;</button>
         <img id="lightbox-img" src="" class="max-w-full max-h-full rounded-lg shadow-2xl">
     </div>
 
     <!-- Modal para Finalizar Orden (registro de cobro y pago) -->
     <div id="complete-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full">
-            <h2 class="text-2xl font-bold mb-4">Finalizar Orden de Trabajo</h2>
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg max-w-lg w-full">
+            <h2 class="text-xl sm:text-2xl font-bold mb-4">Finalizar Orden de Trabajo</h2>
             <form id="complete-order-form">
                 <input type="hidden" id="complete-order-id">
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="monto-cobrado" class="block text-sm font-medium text-gray-700">Monto Cobrado ($)</label>
-                            <input type="number" id="monto-cobrado" step="0.01" class="mt-1 block w-full border-indigo-200 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <input type="number" id="monto-cobrado" step="0.01" class="mt-1 block w-full border-indigo-200 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
                         </div>
                         <div>
                             <label for="forma-pago" class="block text-sm font-medium text-gray-700">Forma de Pago</label>
-                            <select id="forma-pago" class="mt-1 block w-full border-indigo-200 rounded-lg shadow-sm p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <select id="forma-pago" class="mt-1 block w-full border-indigo-200 rounded-lg shadow-sm p-3 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
                                 <option value="" disabled selected>Seleccione...</option>
                                 <option value="Efectivo">Efectivo</option>
                                 <option value="Transferencia">Transferencia</option>
@@ -442,12 +421,12 @@
                     </div>
                     <div>
                         <label for="notas-extra" class="block text-sm font-medium text-gray-700">Notas Adicionales (Opcional)</label>
-                        <textarea id="notas-extra" rows="3" class="mt-1 block w-full border-indigo-200 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        <textarea id="notas-extra" rows="3" class="mt-1 block w-full border-indigo-200 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                     </div>
                 </div>
-                <div class="mt-6 flex justify-end space-x-4">
-                    <button type="button" onclick="document.getElementById('complete-order-modal').classList.add('hidden')" class="bg-gray-500 text-white font-bold py-2.5 px-5 rounded-lg hover:bg-gray-600">Cancelar</button>
-                    <button type="submit" id="complete-submit-btn" class="bg-green-600 text-white font-bold py-2.5 px-5 rounded-lg hover:bg-green-700">Guardar Finalización</button>
+                <div class="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('complete-order-modal').classList.add('hidden')" class="min-h-[44px] bg-gray-500 text-white font-bold py-3 px-5 rounded-lg hover:bg-gray-600">Cancelar</button>
+                    <button type="submit" id="complete-submit-btn" class="min-h-[44px] bg-green-600 text-white font-bold py-3 px-5 rounded-lg hover:bg-green-700">Guardar Finalización</button>
                 </div>
             </form>
         </div>
@@ -495,7 +474,7 @@
          * Segura para exposición en frontend (RLS protege los datos).
          * @constant {string}
          */
-        const SUPABASE_ANON_KEY = 'sb_publishable_iNUgOpa7KY9ZjH6HkAkJiw_x5o7g3nN'; // gitleaks:allow — browser-safe Supabase publishable key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZGRmbWxoY3Npdmpwa3FzbWNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzI4MDAsImV4cCI6MjA5NDI0ODgwMH0.3UfVW1WUtpV31Kb5Ay4p0IcCSB4SIiATS3LJNL0Bqg8';
         
         /**
          * Cliente de Supabase inicializado.
@@ -543,28 +522,6 @@
          */
         let filteredOrders = null;
 
-        // --- UTILIDADES DE FECHA ---
-
-        /**
-         * Convierte una fecha ISO (YYYY-MM-DD) al formato de visualización DD-MM-AAAA.
-         * @param {string} iso Fecha en formato ISO (ej. "2026-09-08")
-         * @returns {string} Fecha formateada (ej. "08-09-2026") o el valor original si no es válida.
-         */
-        function formatFecha(iso) {
-            if (!iso) return '';
-            const parts = String(iso).slice(0, 10).split('-');
-            if (parts.length !== 3) return iso;
-            const [y, m, d] = parts;
-            if (!y || !m || !d) return iso;
-            return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
-        }
-
-        /** Sincroniza el valor ISO del selector nativo con el formato visible DD-MM-AAAA. */
-        function updateFechaDisplay() {
-            const fechaInput = document.getElementById('fecha');
-            document.getElementById('fecha-display').textContent = formatFecha(fechaInput.value) || 'DD-MM-AAAA';
-        }
-
         // --- SELECTORES DOM ---
         // Referencias a elementos del DOM para evitar búsquedas repetidas.
 
@@ -598,416 +555,6 @@
         /** @type {HTMLElement} Contenedor de previews de fotos */
         const fotosPreview = document.getElementById('fotos-preview');
 
-        /** @type {HTMLInputElement} Adjuntos de planilla de verificación */
-        const verificationFilesInput = document.getElementById('verification-files-input');
-
-        function escapeHTML(value) {
-            return String(value ?? '').replace(/[&<>"']/g, char => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            })[char]);
-        }
-
-        function setEscapedHTML(element, html) {
-            element['inner' + 'HTML'] = html;
-        }
-
-        function safePhotoURL(value) {
-            try {
-                const url = new URL(value);
-                return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
-            } catch {
-                return '';
-            }
-        }
-
-        const VERIFICATION_ITEMS = Object.freeze([
-            'REGULADOR', 'MANGUERAS GNC', 'FILTRO DE GAS', 'CAÑO ALTA PRESION', 'MANGUERAS AGUA', 'CUNA',
-            'CILINDRO', 'VALVULA CILINDRO', 'RETENCION', 'NIPLES Y VIROLAS', 'SISTEMA VENTEO', 'CABLEADO VALVULA'
-        ]);
-        const VERIFICATION_STATUSES = Object.freeze(['OK', 'NO OK', 'N/A']);
-        const VERIFICATION_FILE_EXTENSIONS = Object.freeze(['jpg', 'jpeg', 'png', 'pdf', 'xls', 'xlsx']);
-        const VERIFICATION_FILE_TYPES = Object.freeze({
-            jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', pdf: 'application/pdf',
-            xls: 'application/vnd.ms-excel',
-            xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        });
-        let verificationChecklistState = normalizeVerificationChecklist();
-        let verificationSelectedFiles = [];
-
-        function normalizeVerificationChecklist(value = {}) {
-            const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-            return Object.fromEntries(VERIFICATION_ITEMS.map(item => {
-                const entry = source[item] && typeof source[item] === 'object' && !Array.isArray(source[item]) ? source[item] : {};
-                const status = VERIFICATION_STATUSES.includes(entry.status) ? entry.status : null;
-                const note = typeof entry.note === 'string' ? entry.note : '';
-                return [item, { status, note }];
-            }));
-        }
-
-            const UUID_PATTERN = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-        const VERIFICATION_FILE_PATH_PATTERN = new RegExp(`^${UUID_PATTERN}/verification/${UUID_PATTERN}\\.(jpg|jpeg|png|pdf|xls|xlsx)$`, 'i');
-
-        function normalizeVerificationFiles(value = []) {
-            if (!Array.isArray(value)) return [];
-            return value.filter(path => typeof path === 'string' && path.length <= 8192
-                && VERIFICATION_FILE_PATH_PATTERN.test(path));
-        }
-
-        function verificationFilePublicUrl(path) {
-            const normalized = normalizeVerificationFiles([path])[0];
-            if (!normalized) return '';
-            const publicUrl = supabaseClient.storage.from('photos').getPublicUrl(normalized).data?.publicUrl;
-            return safePhotoURL(publicUrl);
-        }
-
-        function setVerificationChecklistItem(item, status, note = '') {
-            if (!VERIFICATION_ITEMS.includes(item)) throw new Error('Ítem de verificación inválido.');
-            if (status !== null && !VERIFICATION_STATUSES.includes(status)) throw new Error('Estado de verificación inválido.');
-            verificationChecklistState[item] = { status, note: String(note ?? '') };
-            renderVerificationChecklistForm();
-        }
-
-        function verificationFileExtension(file) {
-            const name = String(file?.name || '');
-            const extension = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
-            if (!VERIFICATION_FILE_EXTENSIONS.includes(extension)) return '';
-            const expectedType = VERIFICATION_FILE_TYPES[extension];
-            if (file.type && expectedType && file.type !== expectedType && !(extension === 'jpg' && file.type === 'image/jpeg')) return '';
-            return extension;
-        }
-
-        function validateVerificationFiles(files) {
-            return Array.from(files || []).map(file => {
-                const extension = verificationFileExtension(file);
-                if (!extension) throw new Error('Los adjuntos de verificación deben ser JPG, PNG, PDF, XLS o XLSX.');
-                return { file, extension };
-            });
-        }
-
-        function renderVerificationFilesPreview() {
-            const preview = document.getElementById('verification-files-preview');
-            if (!preview) return;
-            preview.textContent = verificationSelectedFiles.length
-                ? `${verificationSelectedFiles.length} archivo(s) de verificación seleccionado(s).`
-                : 'Sin adjuntos de verificación seleccionados.';
-        }
-
-        function renderVerificationChecklistForm() {
-            const container = document.getElementById('verification-checklist-form');
-            if (!container) return;
-            container.textContent = '';
-            for (const item of VERIFICATION_ITEMS) {
-                const row = document.createElement('div');
-                row.className = 'grid grid-cols-1 gap-2 border-b border-gray-200 pb-2 last:border-b-0';
-                const label = document.createElement('label');
-                label.className = 'text-xs font-bold text-gray-700';
-                label.textContent = item;
-                const controls = document.createElement('div');
-                controls.className = 'grid grid-cols-4 gap-2';
-                const select = document.createElement('select');
-                select.className = 'text-xs border-gray-300 rounded p-1';
-                for (const [value, text] of [['', 'Pendiente'], ['OK', 'OK'], ['NO OK', 'NO OK'], ['N/A', 'N/A']]) {
-                    const option = document.createElement('option');
-                    option.value = value;
-                    option.textContent = text;
-                    select.appendChild(option);
-                }
-                select.value = verificationChecklistState[item]?.status || '';
-                select.onchange = () => setVerificationChecklistItem(item, select.value || null, verificationChecklistState[item]?.note || '');
-                const note = document.createElement('input');
-                note.type = 'text';
-                note.className = 'col-span-3 text-xs border-gray-300 rounded p-1';
-                note.placeholder = 'Nota opcional';
-                note.value = verificationChecklistState[item]?.note || '';
-                note.oninput = () => { verificationChecklistState[item] = { status: select.value || null, note: note.value }; };
-                controls.append(select, note);
-                row.append(label, controls);
-                container.appendChild(row);
-            }
-            renderVerificationFilesPreview();
-        }
-
-            function renderVerificationSheetHTML(order, options = {}) {
-            const checklist = normalizeVerificationChecklist(order?.verification_checklist);
-            const files = normalizeVerificationFiles(order?.verification_files);
-            const rows = VERIFICATION_ITEMS.map(item => {
-                const entry = checklist[item];
-                const status = entry.status || 'Pendiente';
-                return `<tr><td class="border px-2 py-1 font-bold">${escapeHTML(item)}</td><td class="border px-2 py-1">${escapeHTML(status)}</td><td class="border px-2 py-1">${escapeHTML(entry.note)}</td></tr>`;
-            }).join('');
-            const fileRows = files.length
-                ? files.map((path, index) => {
-                    const label = `Adjunto ${index + 1}: ${path.split('/').pop()}`;
-                    const publicUrl = options.links === false ? '' : verificationFilePublicUrl(path);
-                    return publicUrl
-                        ? `<li><a href="${escapeHTML(publicUrl)}" target="_blank" rel="noopener" class="text-indigo-600 underline">${escapeHTML(label)}</a>${options.showUrlText ? ` <span class="text-gray-500">${escapeHTML(publicUrl)}</span>` : ''}</li>`
-                        : `<li>${escapeHTML(label)}</li>`;
-                }).join('')
-                : '<li>Sin adjuntos</li>';
-            return `<div class="col-span-2 pt-4 border-t mt-4"><h3 class="text-sm font-bold text-gray-700 mb-2">Planilla de verificación</h3><table class="w-full text-xs border-collapse"><tbody>${rows}</tbody></table><ul class="mt-2 text-xs text-gray-600">${fileRows}</ul></div>`;
-        }
-
-        async function uploadVerificationFiles(files, context) {
-            const valid = validateVerificationFiles(files);
-            const uploaded = [];
-            try {
-                for (const { file, extension } of valid) {
-                    requireCurrentAccount(context);
-                    const path = `${context.id}/verification/${crypto.randomUUID()}.${extension}`;
-                    const result = await supabaseClient.storage.from('photos')
-                        .upload(path, file, { contentType: VERIFICATION_FILE_TYPES[extension] });
-                    if (!result || result.error || result.data?.path !== path) {
-                        throw new Error(result?.error?.message || 'Storage rechazó un adjunto de verificación.');
-                    }
-                    uploaded.push(path);
-                }
-                return uploaded;
-            } catch (error) {
-                if (uploaded.length > 0) {
-                    await supabaseClient.storage.from('photos').remove(uploaded).catch(() => {});
-                }
-                throw error;
-            }
-        }
-
-        async function compensateVerificationUploads(uploaded, context) {
-            if (uploaded.length === 0) return { failed: false };
-            if (!isCurrentAccount(context)) {
-                return { failed: true, error: new Error('La sesión cambió antes de compensar adjuntos de verificación.') };
-            }
-            try {
-                const { error } = await supabaseClient.storage.from('photos').remove(uploaded);
-                if (error) throw error;
-                return { failed: false };
-            } catch (error) {
-                console.error('Verification attachment compensation failed.', error);
-                return { failed: true, error };
-            }
-        }
-
-        function combineCleanupResults(...results) {
-            return { failed: results.some(result => result.failed) };
-        }
-
-        async function saveVerificationSheet(orderId, { checklist, files, uploaded = [], removed = [] }, context = accountContext()) {
-            requireCurrentAccount(context);
-            const payload = {
-                verification_checklist: normalizeVerificationChecklist(checklist),
-                verification_files: normalizeVerificationFiles(files)
-            };
-            let result;
-            try {
-                result = await supabaseClient.from('work_orders')
-                    .update(payload)
-                    .eq('id', orderId)
-                    .eq('user_id', context.id);
-            } catch (error) {
-                throw photoError('persistence', error.message, true);
-            }
-            if (!isCurrentAccount(context) || !result || typeof result !== 'object' || Array.isArray(result)) {
-                throw photoError('persistence', 'La respuesta de persistencia no pudo confirmarse.', true);
-            }
-            if (result.error) {
-                const cleanup = await compensateVerificationUploads(uploaded, context);
-                throw persistenceFailure(result.error, cleanup);
-            }
-            if (removed.length > 0) await supabaseClient.storage.from('photos').remove(removed).catch(() => {});
-            return payload;
-        }
-
-        function renderEditableVerificationChecklist(container, state, onChange) {
-            if (!container) return;
-            container.textContent = '';
-            for (const item of VERIFICATION_ITEMS) {
-                const row = document.createElement('div');
-                row.className = 'grid grid-cols-1 gap-2 border-b border-gray-200 pb-2 last:border-b-0';
-                const label = document.createElement('label');
-                label.className = 'text-xs font-bold text-gray-700';
-                label.textContent = item;
-                const controls = document.createElement('div');
-                controls.className = 'grid grid-cols-4 gap-2';
-                const select = document.createElement('select');
-                select.className = 'text-xs border-gray-300 rounded p-1';
-                for (const [value, text] of [['', 'Pendiente'], ['OK', 'OK'], ['NO OK', 'NO OK'], ['N/A', 'N/A']]) {
-                    const option = document.createElement('option');
-                    option.value = value;
-                    option.textContent = text;
-                    select.appendChild(option);
-                }
-                select.value = state[item]?.status || '';
-                const note = document.createElement('input');
-                note.type = 'text';
-                note.className = 'col-span-3 text-xs border-gray-300 rounded p-1';
-                note.placeholder = 'Nota opcional';
-                note.value = state[item]?.note || '';
-                const sync = () => {
-                    state[item] = { status: select.value || null, note: note.value };
-                    onChange?.();
-                };
-                select.onchange = sync;
-                note.oninput = sync;
-                controls.append(select, note);
-                row.append(label, controls);
-                container.appendChild(row);
-            }
-        }
-
-        function renderVerificationFileEditor(container, paths, removed, onRemove) {
-            if (!container) return;
-            container.textContent = '';
-            const kept = paths.filter(path => !removed.includes(path));
-            if (kept.length === 0) {
-                container.textContent = 'Sin adjuntos guardados.';
-                return;
-            }
-            kept.forEach((path, index) => {
-                const row = document.createElement('div');
-                row.className = 'flex items-center justify-between gap-3';
-                const link = document.createElement('a');
-                link.href = verificationFilePublicUrl(path);
-                link.target = '_blank';
-                link.rel = 'noopener';
-                link.className = 'text-indigo-600 underline truncate';
-                link.textContent = `Adjunto ${index + 1}: ${path.split('/').pop()}`;
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'text-red-600 font-bold';
-                button.textContent = 'Quitar';
-                button.onclick = () => onRemove(path);
-                row.append(link, button);
-                container.appendChild(row);
-            });
-        }
-
-        function setupVerificationEditor(order) {
-            const section = document.getElementById('edit-verification-section');
-            const checklistContainer = document.getElementById('edit-verification-checklist');
-            const filesContainer = document.getElementById('edit-verification-files');
-            const input = document.getElementById('edit-verification-files-input');
-            const button = document.getElementById('save-verification-btn');
-            const context = accountContext();
-            const checklist = normalizeVerificationChecklist(order.verification_checklist);
-            const existingFiles = normalizeVerificationFiles(order.verification_files);
-            let addedFiles = [];
-            let removedFiles = [];
-            const refreshFiles = () => renderVerificationFileEditor(filesContainer, existingFiles, removedFiles, path => {
-                removedFiles = [...removedFiles, path];
-                refreshFiles();
-            });
-            renderEditableVerificationChecklist(checklistContainer, checklist);
-            refreshFiles();
-            section.classList.remove('hidden');
-            input.onchange = e => {
-                try {
-                    addedFiles = [...addedFiles, ...validateVerificationFiles(e.target.files).map(({ file }) => file)];
-                    showNotification(`${addedFiles.length} adjunto(s) nuevo(s) listo(s) para guardar.`);
-                } catch (error) {
-                    showNotification(error.message);
-                } finally {
-                    e.target.value = '';
-                }
-            };
-            button.onclick = async () => {
-                if (button.disabled || !isCurrentAccount(context)) return;
-                button.disabled = true;
-                button.textContent = 'Guardando planilla...';
-                let uploaded = [];
-                try {
-                    uploaded = await uploadVerificationFiles(addedFiles, context);
-                    const keptExisting = existingFiles.filter(path => !removedFiles.includes(path));
-                    const saved = await saveVerificationSheet(order.id, {
-                        checklist,
-                        files: [...keptExisting, ...uploaded],
-                        uploaded,
-                        removed: removedFiles
-                    }, context);
-                    Object.assign(order, saved);
-                    addedFiles = [];
-                    removedFiles = [];
-                    showNotification('Planilla de verificación guardada.');
-                    document.getElementById('view-order-modal').classList.add('hidden');
-                    fetchOrders();
-                } catch (error) {
-                    if (isCurrentAccount(context)) showNotification('No se pudo guardar la planilla: ' + error.message);
-                } finally {
-                    if (isCurrentAccount(context)) {
-                        button.disabled = false;
-                        button.textContent = 'Guardar planilla de verificación';
-                    }
-                }
-            };
-        }
-
-        function createPhotoTile(url, onDelete) {
-            const tile = document.createElement('div');
-            tile.className = 'relative aspect-square overflow-hidden rounded-lg border shadow-sm group cursor-zoom-in';
-            const image = document.createElement('img');
-            image.className = 'w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-zoom-in';
-            image.alt = 'Foto del trabajo';
-            image.src = safePhotoURL(url);
-            image.onclick = event => openLightbox(image.src, event);
-            tile.appendChild(image);
-            if (onDelete) {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity';
-                button.title = 'Borrar Foto';
-                button.textContent = '×';
-                button.onclick = onDelete;
-                tile.appendChild(button);
-            }
-            return tile;
-        }
-
-        let sessionEpoch = 0;
-        let authRequest = 0;
-        let ordersRequest = 0;
-
-        function accountContext() {
-            return currentUser ? { id: currentUser.id, epoch: sessionEpoch } : null;
-        }
-
-        function isCurrentAccount(context) {
-            return Boolean(context && context.epoch === sessionEpoch && context.id === currentUser?.id);
-        }
-
-        function requireCurrentAccount(context) {
-            if (!isCurrentAccount(context)) throw new Error('La sesión cambió durante la operación.');
-        }
-
-        function clearAccountState() {
-            sessionEpoch++;
-            ordersRequest++;
-            currentUser = null;
-            allOrders = [];
-            filteredOrders = null;
-            currentPage = 1;
-            selectedFotosFiles = [];
-            verificationChecklistState = normalizeVerificationChecklist();
-            verificationSelectedFiles = [];
-            morePhotosToUpload = [];
-            clearTimeout(searchTimeout);
-            workOrderForm.reset();
-            document.getElementById('complete-order-form').reset();
-            orderNumberInput.value = '';
-            userDisplay.textContent = '';
-            document.getElementById('search-input').value = '';
-            tableBody.textContent = '';
-            fotosPreview.textContent = '';
-            document.getElementById('add-more-preview').textContent = '';
-            document.getElementById('view-order-content').textContent = '';
-            renderVerificationChecklistForm();
-            document.getElementById('lightbox-img').src = '';
-            document.getElementById('view-whatsapp-btn').onclick = null;
-            renderPagination(0, 0);
-            for (const id of ['view-order-modal', 'complete-order-modal', 'lightbox-modal']) {
-                document.getElementById(id).classList.add('hidden');
-            }
-            closeCameraSelectModal();
-            appContainer.classList.add('hidden');
-            authContainer.classList.remove('hidden');
-        }
-
         // --- LÓGICA DE AUTENTICACIÓN ---
 
         /**
@@ -1019,27 +566,17 @@
          * @returns {Promise<void>}
          */
         async function checkUser() {
-            const request = ++authRequest;
-            try {
-                const { data: { user }, error } = await supabaseClient.auth.getUser();
-                if (request !== authRequest) return;
-                if (error) throw error;
-                if (!user) {
-                    clearAccountState();
-                    return;
-                }
-                if (currentUser?.id !== user.id) clearAccountState();
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user) {
                 currentUser = user;
-                const context = accountContext();
-                if (await fetchOrders() && isCurrentAccount(context)) {
-                    userDisplay.textContent = `Sesión iniciada como: ${user.email}`;
-                    authContainer.classList.add('hidden');
-                    appContainer.classList.remove('hidden');
-                }
-            } catch (error) {
-                if (request !== authRequest) return;
-                clearAccountState();
-                showNotification('No se pudo verificar la sesión: ' + error.message);
+                userDisplay.textContent = `Sesión iniciada como: ${user.email}`;
+                authContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                fetchOrders();
+            } else {
+                currentUser = null;
+                authContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
             }
         }
 
@@ -1115,14 +652,8 @@
          * Logout: cierra sesión en Supabase y vuelve a la pantalla de login.
          */
         document.getElementById('logout-btn').addEventListener('click', async () => {
-            ++authRequest;
-            clearAccountState();
-            try {
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) throw error;
-            } catch (error) {
-                showNotification('No se pudo cerrar la sesión remota. Inténtalo nuevamente: ' + error.message);
-            }
+            await supabaseClient.auth.signOut();
+            checkUser();
         });
 
         // --- GESTIÓN DE ÓRDENES ---
@@ -1136,17 +667,15 @@
          * @returns {Promise<void>}
          */
         async function fetchOrders() {
-            const context = accountContext();
-            if (!context) return false;
-            const request = ++ordersRequest;
-            try {
-                const { data, error } = await supabaseClient
-                    .from('work_orders')
-                    .select('*')
-                    .eq('user_id', context.id)
-                    .order('order_number', { ascending: false });
-                if (!isCurrentAccount(context) || request !== ordersRequest) return false;
-                if (error) throw error;
+            const { data, error } = await supabaseClient
+                .from('work_orders')
+                .select('*')
+                .order('order_number', { ascending: false });
+            
+            if (error) {
+                console.error(error);
+                showNotification("Error cargando órdenes.");
+            } else {
                 allOrders = data;
                 // Resetear paginación y filtros al cargar datos frescos
                 currentPage = 1;
@@ -1157,13 +686,6 @@
                 
                 renderOrders();
                 setNextOrderNumber();
-                return true;
-            } catch (error) {
-                if (isCurrentAccount(context) && request === ordersRequest) {
-                    console.error(error);
-                    showNotification("Error cargando órdenes.");
-                }
-                return false;
             }
         }
 
@@ -1193,43 +715,48 @@
             const end = start + ORDERS_PER_PAGE;
             const pageOrders = sourceOrders.slice(start, end);
 
-                tableBody.textContent = '';
+            // Clear both table body and cards container
+            tableBody.innerHTML = '';
+            const cardsContainer = document.getElementById('orders-cards-container');
+            if (cardsContainer) cardsContainer.innerHTML = '';
 
-                if (totalOrders === 0) {
-                    const message = filteredOrders ? 'No se encontraron órdenes con ese criterio.' : 'No hay órdenes registradas.';
-                    setEscapedHTML(tableBody, `<tr><td colspan="8" class="text-center p-8 text-gray-500">${escapeHTML(message)}</td></tr>`);
-
+            if (totalOrders === 0) {
+                const message = filteredOrders ? 'No se encontraron órdenes con ese criterio.' : 'No hay órdenes registradas.';
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-500">${message}</td></tr>`;
+                if (cardsContainer) {
+                    cardsContainer.innerHTML = `<div class="text-center p-8 text-gray-500 bg-white rounded-xl shadow">${message}</div>`;
+                }
                 renderPagination(0, 0);
                 return;
             }
 
             pageOrders.forEach(order => {
-                const tr = document.createElement('tr');
                 const statusColor = order.status === 'Finalizada' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-                const hasFotos = Array.isArray(order.fotos) && order.fotos.length > 0;
+                const hasFotos = order.fotos && order.fotos.length > 0;
                 
-                setEscapedHTML(tr, `
-                    <td class="px-4 py-4 font-bold">#${escapeHTML(order.order_number)}</td>
-                    <td class="w-32 px-4 py-4 whitespace-nowrap">${escapeHTML(formatFecha(order.fecha))}</td>
-                    <td class="px-4 py-4">${escapeHTML(order.nombre)}</td>
-                    <td class="px-4 py-4">${escapeHTML(order.vehiculo)}</td>
-                    <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${escapeHTML(order.dominio)}</span></td>
+                // === TABLE ROW (Desktop) ===
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-4 font-bold">#${order.order_number}</td>
+                    <td class="px-4 py-4">${order.fecha}</td>
+                    <td class="px-4 py-4">${order.nombre}</td>
+                    <td class="px-4 py-4">${order.vehiculo}</td>
+                    <td class="px-4 py-4"><span class="bg-gray-200 px-2 py-1 rounded font-mono text-xs font-bold">${order.dominio}</span></td>
                     <td class="px-4 py-4 text-center">
                         ${hasFotos ? `<i class="fas fa-camera text-indigo-500" title="${order.fotos.length} fotos"></i>` : `<span class="text-gray-300">-</span>`}
                     </td>
-                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">${escapeHTML(order.status)}</span></td>
+                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">${order.status}</span></td>
                     <td class="px-4 py-4 text-sm">
                         <div class="flex items-center space-x-3">
-                            <button class="view-btn text-blue-600 hover:text-blue-900" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></button>
-                            <button class="whatsapp-btn text-green-500 hover:text-green-700" title="Enviar por WhatsApp"><i class="fab fa-whatsapp fa-lg"></i></button>
-                            ${order.status !== 'Finalizada' ? `<button class="complete-btn text-green-600 hover:text-green-900" title="Finalizar"><i class="fas fa-check-circle fa-lg"></i></button>` : ''}
-                            <button class="print-btn text-indigo-600 hover:text-indigo-900" title="Imprimir"><i class="fas fa-print fa-lg"></i></button>
-                            <button class="delete-btn text-red-600 hover:text-red-900" title="Eliminar"><i class="fas fa-trash fa-lg"></i></button>
+                            <button class="view-btn text-blue-600 hover:text-blue-900 min-w-[44px] min-h-[44px] flex items-center justify-center p-2" title="Ver Detalles"><i class="fas fa-eye fa-lg"></i></button>
+                            <button class="whatsapp-btn text-green-500 hover:text-green-700 min-w-[44px] min-h-[44px] flex items-center justify-center p-2" title="Enviar por WhatsApp"><i class="fab fa-whatsapp fa-lg"></i></button>
+                            ${order.status !== 'Finalizada' ? `<button class="complete-btn text-green-600 hover:text-green-900 min-w-[44px] min-h-[44px] flex items-center justify-center p-2" title="Finalizar"><i class="fas fa-check-circle fa-lg"></i></button>` : ''}
+                            <button class="print-btn text-indigo-600 hover:text-indigo-900 min-w-[44px] min-h-[44px] flex items-center justify-center p-2" title="Imprimir"><i class="fas fa-print fa-lg"></i></button>
+                            <button class="delete-btn text-red-600 hover:text-red-900 min-w-[44px] min-h-[44px] flex items-center justify-center p-2" title="Eliminar"><i class="fas fa-trash fa-lg"></i></button>
                         </div>
                     </td>
-                    `);
+                `;
                 tr.querySelector('.view-btn').onclick = () => viewOrder(order);
-
                 tr.querySelector('.whatsapp-btn').onclick = () => shareViaWhatsApp(order);
                 if (order.status !== 'Finalizada') {
                     tr.querySelector('.complete-btn').onclick = () => openCompleteModal(order);
@@ -1237,6 +764,52 @@
                 tr.querySelector('.print-btn').onclick = () => printWorkOrder(order);
                 tr.querySelector('.delete-btn').onclick = () => deleteOrder(order.id, order.order_number);
                 tableBody.appendChild(tr);
+
+                // === CARD (Mobile) ===
+                if (cardsContainer) {
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-xl shadow-md p-4 border border-gray-100";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="font-bold text-lg text-gray-900">#${order.order_number}</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${statusColor}">${order.status}</span>
+                        </div>
+                        <div class="space-y-2 mb-3">
+                            <p class="text-sm text-gray-700"><span class="font-semibold">Cliente:</span> ${order.nombre}</p>
+                            <p class="text-sm text-gray-700"><span class="font-semibold">Vehículo:</span> ${order.vehiculo}</p>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-sm font-bold bg-gray-100 px-2 py-1 rounded border border-gray-200">${order.dominio}</span>
+                                ${hasFotos ? `<span class="text-indigo-500 text-xs"><i class="fas fa-camera mr-1"></i>${order.fotos.length} fotos</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <button class="view-btn min-w-[44px] min-h-[44px] flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors p-2" title="Ver Detalles">
+                                <i class="fas fa-eye fa-lg"></i>
+                            </button>
+                            <button class="whatsapp-btn min-w-[44px] min-h-[44px] flex items-center justify-center bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors p-2" title="WhatsApp">
+                                <i class="fab fa-whatsapp fa-lg"></i>
+                            </button>
+                            ${order.status !== 'Finalizada' ? `
+                            <button class="complete-btn min-w-[44px] min-h-[44px] flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors p-2" title="Finalizar">
+                                <i class="fas fa-check-circle fa-lg"></i>
+                            </button>` : ''}
+                            <button class="print-btn min-w-[44px] min-h-[44px] flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors p-2" title="Imprimir">
+                                <i class="fas fa-print fa-lg"></i>
+                            </button>
+                            <button class="delete-btn min-w-[44px] min-h-[44px] flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors p-2" title="Eliminar">
+                                <i class="fas fa-trash fa-lg"></i>
+                            </button>
+                        </div>
+                    `;
+                    card.querySelector('.view-btn').onclick = () => viewOrder(order);
+                    card.querySelector('.whatsapp-btn').onclick = () => shareViaWhatsApp(order);
+                    if (order.status !== 'Finalizada') {
+                        card.querySelector('.complete-btn').onclick = () => openCompleteModal(order);
+                    }
+                    card.querySelector('.print-btn').onclick = () => printWorkOrder(order);
+                    card.querySelector('.delete-btn').onclick = () => deleteOrder(order.id, order.order_number);
+                    cardsContainer.appendChild(card);
+                }
             });
 
             renderPagination(totalOrders, totalPages);
@@ -1255,7 +828,7 @@
             if (!container) return;
 
             if (totalOrders === 0) {
-                container.textContent = '';
+                container.innerHTML = '';
                 container.classList.add('hidden');
                 return;
             }
@@ -1268,8 +841,7 @@
             const isFirstPage = currentPage === 1;
             const isLastPage = currentPage === totalPages;
 
-            container.textContent = '';
-            setEscapedHTML(container, `
+            container.innerHTML = `
                 <div class="flex justify-between items-center">
                     <div class="text-sm text-gray-600">
                         Mostrando <span class="font-bold">${start}</span> - <span class="font-bold">${end}</span> de <span class="font-bold">${totalOrders}</span> órdenes
@@ -1291,7 +863,7 @@
                         </button>
                     </div>
                 </div>
-            `);
+            `;
 
             // Event listeners para navegación
             const prevBtn = document.getElementById('prev-page-btn');
@@ -1483,21 +1055,6 @@
             e.target.value = '';
         });
 
-        verificationFilesInput?.addEventListener('change', (e) => {
-            try {
-                verificationSelectedFiles = validateVerificationFiles(e.target.files).map(({ file }) => file);
-                renderVerificationFilesPreview();
-            } catch (error) {
-                verificationSelectedFiles = [];
-                renderVerificationFilesPreview();
-                showNotification(error.message);
-            } finally {
-                e.target.value = '';
-            }
-        });
-
-        renderVerificationChecklistForm();
-
         // Cerrar modal al hacer clic fuera del contenido
         document.getElementById('camera-select-modal')?.addEventListener('click', (e) => {
             if (e.target.id === 'camera-select-modal') closeCameraSelectModal();
@@ -1571,25 +1128,33 @@
          * @returns {void}
          */
         function renderFotosPreview() {
-            fotosPreview.textContent = '';
+            fotosPreview.innerHTML = '';
             selectedFotosFiles.forEach((foto, i) => {
                 const div = document.createElement('div');
-                div.className = "relative h-12 w-full";
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(foto.blob);
-                img.className = 'h-full w-full object-cover rounded';
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-[10px]';
-                button.textContent = '×';
-                button.onclick = () => removeFoto(i);
-                div.append(img, button);
+                div.className = "relative h-16 w-full";
+                div.innerHTML = `<img src="${URL.createObjectURL(foto.blob)}" class="h-full w-full object-cover rounded-lg"><button type="button" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 min-w-[44px] min-h-[44px] flex items-center justify-center text-sm font-bold shadow-lg" onclick="removeFoto(${i})">&times;</button>`;
                 fotosPreview.appendChild(div);
             });
         }
         window.removeFoto = (i) => { selectedFotosFiles.splice(i, 1); renderFotosPreview(); };
 
         // --- GUARDAR ORDEN ---
+
+        /**
+         * Sanitiza un nombre de archivo para Supabase Storage.
+         * Remueve caracteres especiales, espacios múltiples y acentos.
+         * @function sanitizeFileName
+         * @param {string} name - Nombre original del archivo
+         * @returns {string} Nombre sanitizado seguro para storage
+         */
+        function sanitizeFileName(name) {
+            return name
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Quitar acentos
+                .replace(/[^a-zA-Z0-9._-]/g, '_')                 // Reemplazar especiales con _
+                .replace(/_+/g, '_')                               // Colapsar guiones bajos
+                .replace(/\.\./g, '.')                             // Evitar puntos dobles
+                .toLowerCase();
+        }
 
         /**
          * Maneja el envío del formulario de nueva orden de trabajo.
@@ -1602,23 +1167,33 @@
          */
         workOrderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const context = accountContext();
-            if (!context) return showNotification('Inicia sesión antes de guardar una orden.');
             const saveBtn = document.getElementById('save-btn');
-            if (saveBtn.disabled) return;
             saveBtn.disabled = true;
-            saveBtn.textContent = 'Guardando...';
+            saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...`;
 
-                const files = [...selectedFotosFiles];
-                let uploadResult = { urls: [], newlyUploaded: [] };
-                let uploadedVerificationFiles = [];
-                try {
-                    uploadedVerificationFiles = await uploadVerificationFiles(verificationSelectedFiles, context);
-                    uploadResult = await uploadPhotos(files, context);
+            try {
+                // 1. Subir fotos a Supabase Storage
+                const fotoUrls = [];
+                for (const foto of selectedFotosFiles) {
+                    const fileName = `${Date.now()}_${sanitizeFileName(foto.name)}`;
+                    const { data, error: uploadError } = await supabaseClient.storage
+                        .from('photos')
+                        .upload(`${currentUser.id}/${fileName}`, foto.blob);
+                    
+                    if (uploadError) {
+                        console.error("Error subiendo foto:", uploadError);
+                        throw new Error("Error en Storage: " + uploadError.message + ". Verifica que el bucket 'photos' exista y sea público.");
+                    }
+                    
+                    if (data) {
+                        const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
+                        fotoUrls.push(publicUrl);
+                    }
+                }
 
-                    const newOrder = {
-
-                    user_id: context.id,
+                // 2. Guardar en Base de Datos
+                const newOrder = {
+                    user_id: currentUser.id,
                     order_number: parseInt(orderNumberInput.value),
                     fecha: document.getElementById('fecha').value,
                     nombre: document.getElementById('nombre').value,
@@ -1632,49 +1207,24 @@
                     nv: document.getElementById('nv').checked,
                     retencion: document.getElementById('retencion').checked,
                     mangueras: document.getElementById('mangueras').checked,
-                    fotos: uploadResult.urls,
-                    verification_checklist: normalizeVerificationChecklist(verificationChecklistState),
-                    verification_files: uploadedVerificationFiles,
+                    fotos: fotoUrls,
                     status: 'Abierta'
                 };
 
-                let result;
-                try {
-                    result = await supabaseClient.from('work_orders').insert([newOrder]);
-                } catch (error) {
-                    throw photoError('persistence', error.message, true);
-                }
-                if (!isCurrentAccount(context) || !result || typeof result !== 'object' || Array.isArray(result)) {
-                    throw photoError('persistence', 'La respuesta de persistencia no pudo confirmarse.', true);
-                }
-                if (result.error) {
-                    const photoCleanup = await compensateUploads(uploadResult.newlyUploaded, context);
-                    const verificationCleanup = await compensateVerificationUploads(uploadedVerificationFiles, context);
-                    throw persistenceFailure(result.error, combineCleanupResults(photoCleanup, verificationCleanup));
-                }
+                const { error } = await supabaseClient.from('work_orders').insert([newOrder]);
+                if (error) throw error;
 
                 showNotification("Orden guardada online correctamente.");
                 workOrderForm.reset();
-                document.getElementById('fecha').valueAsDate = new Date();
-                updateFechaDisplay();
-                    selectedFotosFiles = [];
-                    verificationSelectedFiles = [];
-                    verificationChecklistState = normalizeVerificationChecklist();
-                    renderFotosPreview();
-                    renderVerificationChecklistForm();
-                    fetchOrders();
-
+                selectedFotosFiles = [];
+                renderFotosPreview();
+                fetchOrders();
             } catch (err) {
                 console.error(err);
-                if (err.photoFailure === 'upload' && uploadedVerificationFiles.length > 0) {
-                    await compensateVerificationUploads(uploadedVerificationFiles, context);
-                }
-                if (isCurrentAccount(context)) showNotification(err.photoFailure ? photoFailureMessage(err) : err.message);
+                showNotification("Error al guardar: " + err.message);
             } finally {
-                if (isCurrentAccount(context)) {
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = 'Guardar en la Nube';
-                }
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Guardar en la Nube`;
             }
         });
 
@@ -1717,33 +1267,42 @@
                     <div class="col-span-2 pt-4 border-t mt-4">
                         <h3 class="text-sm font-bold text-green-700">Detalles de Finalización</h3>
                         <div class="grid grid-cols-2 gap-4 mt-2">
-                            <div><p class="text-xs text-gray-500">Monto Cobrado</p><p class="font-bold text-lg text-green-700">$ ${escapeHTML(order.monto_cobrado)}</p></div>
-                            <div><p class="text-xs text-gray-500">Forma de Pago</p><p class="font-bold text-lg text-indigo-700">${escapeHTML(order.forma_pago || 'No especificada')}</p></div>
-                            ${order.notas_extra ? `<div class="col-span-2"><p class="text-xs text-gray-500">Notas Adicionales</p><p class="p-3 bg-green-50 text-green-900 rounded-lg mt-1 border border-green-100 text-sm leading-relaxed whitespace-pre-line">${escapeHTML(order.notas_extra)}</p></div>` : ''}
+                            <div><p class="text-xs text-gray-500">Monto Cobrado</p><p class="font-bold text-lg text-green-700">$ ${order.monto_cobrado}</p></div>
+                            <div><p class="text-xs text-gray-500">Forma de Pago</p><p class="font-bold text-lg text-indigo-700">${order.forma_pago || 'No especificada'}</p></div>
+                            ${order.notas_extra ? `<div class="col-span-2"><p class="text-xs text-gray-500">Notas Adicionales</p><p class="p-3 bg-green-50 text-green-900 rounded-lg mt-1 border border-green-100 text-sm leading-relaxed">${order.notas_extra}</p></div>` : ''}
                         </div>
                     </div>
                 `;
             }
 
             let fotosHtml = '';
-            if (Array.isArray(order.fotos) && order.fotos.length > 0) {
+            if (order.fotos && order.fotos.length > 0) {
                 fotosHtml = `
                     <div class="col-span-2 pt-4 border-t mt-4">
                         <h3 class="text-sm font-bold text-gray-700 mb-2">Galería de Fotos</h3>
-                        <div id="detail-gallery" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            ${order.fotos.map((f, i) => `
+                                <div class="relative aspect-square overflow-hidden rounded-lg border shadow-sm group">
+                                    <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 cursor-zoom-in" onclick="openLightbox('${f}', event)">
+                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all pointer-events-none"></div>
+                                    <button onclick="deleteSpecificPhoto('${order.id}', '${f}', ${i})" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-10 h-10 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity" title="Borrar Foto">
+                                        <i class="fas fa-trash-alt text-sm"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                 `;
             }
 
-            content.textContent = '';
-            setEscapedHTML(content, `
+            content.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${escapeHTML(order.order_number)}</p></div>
-                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${escapeHTML(formatFecha(order.fecha))}</p></div>
-                    <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${escapeHTML(order.nombre)}</p></div>
-                    <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${String(order.telefono ?? '').replace(/[^+\d]/g, '')}" class="text-indigo-600">${escapeHTML(order.telefono || 'N/A')}</a></p></div>
-                    <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${escapeHTML(order.vehiculo)} (${escapeHTML(order.dominio)})</p></div>
-                    <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border whitespace-pre-line">${escapeHTML(order.novedades)}</p></div>
+                    <div><p class="text-xs text-gray-500">N° Orden</p><p class="font-bold text-lg">#${order.order_number}</p></div>
+                    <div><p class="text-xs text-gray-500">Fecha</p><p class="font-bold text-lg">${order.fecha}</p></div>
+                    <div><p class="text-xs text-gray-500">Cliente</p><p class="font-bold text-lg">${order.nombre}</p></div>
+                    <div><p class="text-xs text-gray-500">Teléfono</p><p class="font-bold text-lg"><a href="tel:${order.telefono}" class="text-indigo-600">${order.telefono || 'N/A'}</a></p></div>
+                    <div><p class="text-xs text-gray-500">Vehículo</p><p class="font-bold text-lg">${order.vehiculo} (${order.dominio})</p></div>
+                    <div class="col-span-2"><p class="text-xs text-gray-500">Novedades / Trabajos</p><p class="p-3 bg-gray-50 rounded-lg mt-1 border">${order.novedades.replace(/\n/g, '<br>')}</p></div>
                     
                     <div class="col-span-2 grid grid-cols-3 gap-2 mt-2 bg-gray-50 p-2 rounded border">
                         <div class="text-xs ${order.garantia ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.garantia ? 'fa-check-square' : 'fa-square'} mr-1"></i> Garantía</div>
@@ -1754,21 +1313,12 @@
                         <div class="text-xs ${order.mangueras ? 'text-indigo-600 font-bold' : 'text-gray-400'}"><i class="fas ${order.mangueras ? 'fa-check-square' : 'fa-square'} mr-1"></i> Mangueras</div>
                     </div>
 
-                    ${renderVerificationSheetHTML(order)}
                     ${fotosHtml}
                     ${finalizationDetails}
                 </div>
-            `);
-            if (Array.isArray(order.fotos)) {
-                const gallery = document.getElementById('detail-gallery');
-                order.fotos.forEach((url, index) => gallery?.appendChild(
-                    createPhotoTile(url, () => deleteSpecificPhoto(order.id, url, index))
-                ));
-            }
+            `;
             
             // Preparar sección de añadir más fotos
-                setupVerificationEditor(order);
-
             const addSection = document.getElementById('add-photos-section');
             if (order.status !== 'Finalizada') {
                 addSection.classList.remove('hidden');
@@ -1784,152 +1334,6 @@
         }
 
         let morePhotosToUpload = [];
-
-        function photoError(kind, message, ambiguous = false, cleanupFailed = false, cleanupAttempted = false) {
-            const error = new Error(message);
-            error.photoFailure = kind;
-            error.ambiguous = ambiguous;
-            error.cleanupFailed = cleanupFailed;
-            error.cleanupAttempted = cleanupAttempted;
-            return error;
-        }
-
-        function photoFailureMessage(error) {
-            if (error.photoFailure === 'upload') {
-                if (!error.cleanupAttempted) {
-                    return 'Falló la subida de fotos: ' + error.message;
-                }
-                const cleanup = error.cleanupFailed
-                    ? ' Además, la compensación falló parcialmente; se conservaron las referencias para reintentar.'
-                    : ' Las subidas previas de esta operación fueron compensadas.';
-                return 'Falló la subida de fotos: ' + error.message + cleanup;
-            }
-            if (error.photoFailure === 'persistence') {
-                if (error.ambiguous) {
-                    return 'No se pudo confirmar la persistencia de las fotos. Los objetos se conservaron porque la RPC pudo haberse aplicado. ' + error.message;
-                }
-                if (!error.cleanupAttempted) {
-                    return 'Falló la persistencia de las fotos: ' + error.message;
-                }
-                const cleanup = error.cleanupFailed
-                    ? ' La compensación falló parcialmente; algunas subidas nuevas pueden requerir limpieza manual.'
-                    : ' Las subidas nuevas de esta operación fueron compensadas.';
-                return 'Falló la persistencia de las fotos: ' + error.message + cleanup;
-            }
-            return 'Error al procesar las fotos: ' + error.message;
-        }
-
-        async function compensateUploads(uploaded, context) {
-            if (uploaded.length === 0) return { failed: false };
-            if (!isCurrentAccount(context)) {
-                return { failed: true, error: new Error('La sesión cambió antes de compensar.') };
-            }
-            try {
-                const { error } = await supabaseClient.storage.from('photos')
-                    .remove(uploaded.map(photo => photo.uploadedPath));
-                if (error) throw error;
-                uploaded.forEach(photo => {
-                    delete photo.uploadedPath;
-                    delete photo.uploadedUrl;
-                });
-                return { failed: false };
-            } catch (error) {
-                console.error('Photo upload compensation failed.', error);
-                return { failed: true, error };
-            }
-        }
-
-        function persistenceFailure(error, cleanup) {
-            return photoError('persistence', error.message || String(error), false, cleanup.failed, true);
-        }
-
-        async function changeOrderPhotos(orderId, added, removed, context) {
-            requireCurrentAccount(context);
-            let result;
-            try {
-                result = await supabaseClient.rpc('change_order_photos', {
-                    p_order_id: orderId,
-                    p_add: added,
-                    p_remove: removed,
-                    p_user_id: context.id
-                });
-            } catch (error) {
-                throw photoError('persistence', error.message, true);
-            }
-            if (!isCurrentAccount(context) || !result || typeof result !== 'object') {
-                throw photoError('persistence', 'La respuesta de la RPC no pudo confirmarse.', true);
-            }
-            if (result.error) throw photoError('persistence', result.error.message, false);
-            if (!Array.isArray(result.data)
-                || result.data.some(url => typeof url !== 'string' || !safePhotoURL(url))) {
-                throw photoError('persistence', 'La RPC no confirmó un arreglo válido de fotos.', true);
-            }
-            return result.data;
-        }
-
-        async function uploadPhotos(files, context) {
-            const newlyUploaded = [];
-            try {
-                for (const photo of files) {
-                    requireCurrentAccount(context);
-                    if (photo.uploadedUrl) continue;
-                    const path = `${context.id}/${crypto.randomUUID()}.jpg`;
-                    let result;
-                    try {
-                        result = await supabaseClient.storage.from('photos')
-                            .upload(path, photo.blob, { contentType: 'image/jpeg' });
-                    } catch (error) {
-                        // The request outcome is unknown, but the generated path is safe to compensate.
-                        photo.uploadedPath = path;
-                        newlyUploaded.push(photo);
-                        throw error;
-                    }
-                    if (!result || typeof result !== 'object' || Array.isArray(result)) {
-                        photo.uploadedPath = path;
-                        newlyUploaded.push(photo);
-                        throw new Error('Storage devolvió una respuesta inválida.');
-                    }
-                    const { data, error } = result;
-                    if (error) throw new Error(error.message || 'Storage rechazó la subida.');
-                    if (!data || typeof data !== 'object' || typeof data.path !== 'string') {
-                        photo.uploadedPath = path;
-                        newlyUploaded.push(photo);
-                        throw new Error('Storage no devolvió una ruta válida para el archivo.');
-                    }
-                    if (data.path !== path) {
-                        photo.uploadedPath = path;
-                        newlyUploaded.push(photo);
-                        throw new Error('Storage devolvió una ruta distinta de la solicitada.');
-                    }
-                    photo.uploadedPath = path;
-                    newlyUploaded.push(photo);
-                    const publicUrl = supabaseClient.storage.from('photos').getPublicUrl(path).data?.publicUrl;
-                    if (!safePhotoURL(publicUrl)) {
-                        throw new Error('Storage no devolvió una URL pública HTTPS válida.');
-                    }
-                    photo.uploadedUrl = publicUrl;
-                    requireCurrentAccount(context);
-                }
-                return { urls: files.map(photo => photo.uploadedUrl), newlyUploaded };
-            } catch (error) {
-                const cleanup = await compensateUploads(newlyUploaded, context);
-                throw photoError('upload', error.message, false, cleanup.failed, newlyUploaded.length > 0);
-            }
-        }
-
-        async function addOrderPhotos(orderId, files, context) {
-            // Check RPC availability and ownership before creating Storage objects.
-            await changeOrderPhotos(orderId, [], [], context);
-            const upload = await uploadPhotos(files, context);
-            try {
-                await changeOrderPhotos(orderId, upload.urls, [], context);
-                return upload.urls;
-            } catch (error) {
-                if (error.ambiguous) throw error;
-                const cleanup = await compensateUploads(upload.newlyUploaded, context);
-                throw persistenceFailure(error, cleanup);
-            }
-        }
         /**
          * Configura la funcionalidad de añadir fotos adicionales a una orden.
          * Permite seleccionar, comprimir y subir fotos nuevas, actualizando
@@ -1941,7 +1345,6 @@
          * @returns {void}
          */
         function setupAddMorePhotos(order) {
-            const context = accountContext();
             const preview = document.getElementById('add-more-preview');
             const uploadBtn = document.getElementById('upload-more-btn');
             const openModalBtn = document.getElementById('open-add-more-camera-modal');
@@ -1952,7 +1355,7 @@
             const inputGallery = document.getElementById('add-more-input-gallery');
             
             morePhotosToUpload = [];
-            preview.textContent = '';
+            preview.innerHTML = '';
             uploadBtn.classList.add('hidden');
 
             // Función para procesar archivos seleccionados
@@ -1975,14 +1378,11 @@
             }
 
             function renderMorePhotosPreview() {
-                preview.textContent = '';
+                preview.innerHTML = '';
                 morePhotosToUpload.forEach((foto, i) => {
                     const div = document.createElement('div');
-                    div.className = "relative h-12 w-full";
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(foto.blob);
-                    img.className = 'h-full w-full object-cover rounded';
-                    div.appendChild(img);
+                    div.className = "relative h-16 w-full";
+                    div.innerHTML = `<img src="${URL.createObjectURL(foto.blob)}" class="h-full w-full object-cover rounded-lg">`;
                     preview.appendChild(div);
                 });
                 if (morePhotosToUpload.length > 0) uploadBtn.classList.remove('hidden');
@@ -1990,25 +1390,38 @@
             }
 
             uploadBtn.onclick = async () => {
-                if (uploadBtn.disabled || !isCurrentAccount(context)) return;
                 uploadBtn.disabled = true;
-                uploadBtn.textContent = 'Subiendo...';
+                uploadBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Subiendo...`;
                 
                 try {
-                    const files = [...morePhotosToUpload];
-                    await addOrderPhotos(order.id, files, context);
-                    morePhotosToUpload = [];
+                    const newUrls = [];
+                    for (const foto of morePhotosToUpload) {
+                        const fileName = `extra_${Date.now()}_${sanitizeFileName(foto.name)}`;
+                        const { data } = await supabaseClient.storage.from('photos').upload(`${currentUser.id}/${fileName}`, foto.blob);
+                        if (data) {
+                            const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
+                            newUrls.push(publicUrl);
+                        }
+                    }
+
+                    const currentFotos = order.fotos || [];
+                    const updatedFotos = [...currentFotos, ...newUrls];
+
+                    const { error } = await supabaseClient
+                        .from('work_orders')
+                        .update({ fotos: updatedFotos })
+                        .eq('id', order.id);
+
+                    if (error) throw error;
                     
                     showNotification("Fotos añadidas con éxito.");
                     document.getElementById('view-order-modal').classList.add('hidden');
                     fetchOrders();
                 } catch (err) {
-                    if (isCurrentAccount(context)) showNotification(photoFailureMessage(err));
+                    showNotification("Error: " + err.message);
                 } finally {
-                    if (isCurrentAccount(context)) {
-                        uploadBtn.disabled = false;
-                        uploadBtn.textContent = 'Confirmar Subida';
-                    }
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = "Confirmar Subida";
                 }
             };
         }
@@ -2082,7 +1495,7 @@
 
         /**
          * Elimina una foto específica de una orden.
-         * Elimina la referencia mediante una delta atómica; conserva el objeto de Storage.
+         * Flujo: 1) Actualiza array en BD, 2) Elimina archivo de Storage.
          * Muestra confirmación antes de proceder.
          * @async
          * @function deleteSpecificPhoto
@@ -2092,16 +1505,38 @@
          * @returns {Promise<void>}
          */
         async function deleteSpecificPhoto(orderId, photoUrl, index) {
-            const context = accountContext();
-            showNotification("¿Eliminar esta foto de la orden? El archivo se conservará para no afectar respaldos u otros enlaces.", true, async () => {
+            showNotification("¿Estás seguro de que deseas eliminar esta foto permanentemente?", true, async () => {
                 try {
-                    await changeOrderPhotos(orderId, [], [photoUrl], context);
+                    // 1. Obtener la orden actualizada
+                    const { data: order } = await supabaseClient.from('work_orders').select('fotos').eq('id', orderId).single();
+                    if (!order) return;
+
+                    const updatedFotos = order.fotos.filter(f => f !== photoUrl);
+
+                    // 2. Borrar de la Base de Datos
+                    const { error: dbError } = await supabaseClient
+                        .from('work_orders')
+                        .update({ fotos: updatedFotos })
+                        .eq('id', orderId);
+
+                    if (dbError) throw dbError;
+
+                    // 3. Borrar del Storage (opcional pero recomendado)
+                    try {
+                        const pathParts = photoUrl.split('/photos/')[1];
+                        if (pathParts) {
+                            const filePath = decodeURIComponent(pathParts);
+                            await supabaseClient.storage.from('photos').remove([filePath]);
+                        }
+                    } catch (storageErr) {
+                        console.error("Error al borrar de storage:", storageErr);
+                    }
 
                     showNotification("Foto eliminada correctamente.");
                     document.getElementById('view-order-modal').classList.add('hidden');
                     fetchOrders();
                 } catch (err) {
-                    if (isCurrentAccount(context)) showNotification(photoFailureMessage(err));
+                    showNotification("Error: " + err.message);
                 }
             });
         }
@@ -2119,7 +1554,7 @@
         function openLightbox(url, e) {
             const lb = document.getElementById('lightbox-modal');
             const img = document.getElementById('lightbox-img');
-            img.src = safePhotoURL(url);
+            img.src = url;
             lb.classList.remove('hidden');
             if (e) e.stopPropagation();
         }
@@ -2160,7 +1595,7 @@
             const submitBtn = document.getElementById('complete-submit-btn');
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Guardando...';
+            submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...`;
 
             const { error } = await supabaseClient
                 .from('work_orders')
@@ -2180,7 +1615,7 @@
                 fetchOrders();
             }
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Guardar Finalización';
+            submitBtn.innerHTML = `Guardar Finalización`;
         });
 
         // --- COMPARTIR WHATSAPP ---
@@ -2230,13 +1665,7 @@
 
             const encodedMsg = encodeURIComponent(message);
             const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`;
-            if (/^https:\/\/wa\.me\/\d*\?text=/.test(waUrl)) {
-                const link = document.createElement('a');
-                link.href = waUrl;
-                link.target = '_blank';
-                link.rel = 'noopener';
-                link.click();
-            }
+            window.open(waUrl, '_blank');
         }
 
         // --- VISTA PÚBLICA DE LA ORDEN PARA CLIENTES ---
@@ -2298,8 +1727,8 @@
                 document.getElementById('pub-vehiculo').textContent = order.vehiculo;
                 document.getElementById('pub-dominio').textContent = order.dominio;
                 document.getElementById('pub-cliente').textContent = order.nombre;
-                document.getElementById('pub-fecha').textContent = formatFecha(order.fecha);
-                document.getElementById('pub-trabajos').textContent = order.novedades ?? '';
+                document.getElementById('pub-fecha').textContent = new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+                document.getElementById('pub-trabajos').innerHTML = order.novedades.replace(/\n/g, '<br>');
                 
                 // Actualizar checks de adicionales
                 updatePubCheck('pub-garantia', order.garantia, 'Garantía');
@@ -2308,21 +1737,23 @@
                 updatePubCheck('pub-nv', order.nv, 'NV');
                 updatePubCheck('pub-retencion', order.retencion, 'Retención');
                 updatePubCheck('pub-mangueras', order.mangueras, 'Mangueras');
-
-                    const verificationSection = document.getElementById('pub-verification-section');
-                const verificationContent = document.getElementById('pub-verification-content');
-                verificationSection.classList.remove('hidden');
-                setEscapedHTML(verificationContent, renderVerificationSheetHTML(order));
-
+                
                 // Fotos del trabajo
                 const galeriaSec = document.getElementById('pub-galeria-section');
                 const galeria = document.getElementById('pub-galeria');
-                galeria.textContent = '';
+                galeria.innerHTML = '';
                 
-                if (Array.isArray(order.fotos) && order.fotos.length > 0) {
+                if (order.fotos && order.fotos.length > 0) {
                     galeriaSec.classList.remove('hidden');
                     order.fotos.forEach((f) => {
-                        galeria.appendChild(createPhotoTile(f));
+                        const div = document.createElement('div');
+                        div.className = "relative aspect-square overflow-hidden rounded-xl border border-gray-100 shadow-sm group cursor-zoom-in";
+                        div.onclick = (e) => openLightbox(f, e);
+                        div.innerHTML = `
+                            <img src="${f}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
+                        `;
+                        galeria.appendChild(div);
                     });
                 } else {
                     galeriaSec.classList.add('hidden');
@@ -2330,7 +1761,7 @@
                 
             } catch (err) {
                 console.error("Error cargando orden pública:", err);
-                showPublicError(`No se pudo cargar la orden. Asegúrate de tener conexión a Internet o de que la orden exista. Detalles: ${err.message}`);
+                showPublicError(`No se pudo cargar la orden. Asegúrate de tener conexión a Internet o de que la orden exista.<br><br><span class="text-xs text-gray-400">Detalles: ${err.message}</span>`);
             }
         }
         
@@ -2347,10 +1778,10 @@
             const el = document.getElementById(id);
             if (value) {
                 el.className = "flex items-center text-sm text-indigo-700 font-bold";
-                el.textContent = `✓ ${label}`;
+                el.innerHTML = `<i class="fas fa-check-circle text-indigo-600 mr-2"></i> ${label}`;
             } else {
                 el.className = "flex items-center text-sm text-gray-400 font-normal";
-                el.textContent = `○ ${label}`;
+                el.innerHTML = `<i class="far fa-circle mr-2 text-gray-300"></i> ${label}`;
             }
         }
         
@@ -2358,24 +1789,23 @@
          * Muestra pantalla de error en la vista pública del cliente.
          * Se usa cuando la orden no existe o hay problemas de conexión.
          * @function showPublicError
-         * @param {string} msg - Mensaje de error mostrado como texto.
+         * @param {string} msg - Mensaje de error a mostrar (admite HTML)
          * @returns {void}
          */
         function showPublicError(msg) {
             const publicContainer = document.getElementById('public-container');
-            publicContainer.textContent = '';
-            setEscapedHTML(publicContainer, `
+            publicContainer.innerHTML = `
                 <div class="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl shadow-xl border border-gray-100 text-center space-y-4">
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-600 text-2xl mb-2">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     <h2 class="text-xl font-bold text-gray-800">Error de Acceso</h2>
-                    <p class="text-gray-600 leading-relaxed">${escapeHTML(msg)}</p>
+                    <p class="text-gray-600 leading-relaxed">${msg}</p>
                     <a href="index.html" class="inline-block mt-4 bg-indigo-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all text-sm">
                         Ir al Inicio
                     </a>
                 </div>
-            `);
+            `;
         }
 
 
@@ -2401,23 +1831,22 @@
          * @returns {void}
          */
         function printWorkOrder(order) {
-            const printWindow = window.open();
-            if (!printWindow) return showNotification('Permite las ventanas emergentes para imprimir.');
+            const printWindow = window.open('', '_blank', 'height=600,width=800');
             printWindow.document.write('<html><head><title>Orden de Trabajo</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:sans-serif} @media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div id="print-area">');
             printWindow.document.write(`
                 <div class="p-8">
                     <div class="flex justify-between items-start mb-6 pb-4 border-b">
                         <div><h1 class="text-2xl font-bold">ORDEN DE TRABAJO</h1><p class="text-gray-600">Taller Mecánico (Online)</p></div>
-                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${escapeHTML(order.order_number)}</p><p>Fecha: ${escapeHTML(formatFecha(order.fecha))}</p></div>
+                        <div class="text-right"><p class="font-bold text-xl">Orden N°: ${order.order_number}</p><p>Fecha: ${new Date(order.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</p></div>
                     </div>
                     <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
-                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${escapeHTML(order.nombre)}</span></div>
-                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${escapeHTML(order.telefono || 'N/A')}</span></div>
-                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${escapeHTML(order.vehiculo)}</span></div>
-                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${escapeHTML(order.dominio)}</span></div>
+                        <div><strong class="block text-gray-500">Cliente:</strong> <span class="text-lg">${order.nombre}</span></div>
+                        <div><strong class="block text-gray-500">Teléfono:</strong> <span class="text-lg">${order.telefono || 'N/A'}</span></div>
+                        <div><strong class="block text-gray-500">Vehículo:</strong> <span class="text-lg">${order.vehiculo}</span></div>
+                        <div><strong class="block text-gray-500">Dominio:</strong> <span class="text-lg font-mono p-1 bg-gray-200 rounded">${order.dominio}</span></div>
                     </div>
                     <h2 class="text-lg font-bold mb-2">Novedades y Trabajos a Realizar</h2>
-                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p class="whitespace-pre-line">${escapeHTML(order.novedades)}</p></div>
+                    <div class="p-4 border bg-gray-50 rounded-md min-h-[150px] mb-6"><p>${order.novedades.replace(/\n/g, '<br>')}</p></div>
                     
                     <div class="grid grid-cols-3 gap-4 mb-6 p-4 border rounded bg-gray-50">
                         <div><strong class="text-gray-500">Garantía:</strong> ${order.garantia ? 'SÍ' : 'NO'}</div>
@@ -2432,10 +1861,8 @@
                         <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Cliente</p></div>
                         <div class="text-center"><p class="border-t-2 border-gray-400 pt-2">Firma del Taller</p></div>
                     </div>
-                    ${renderVerificationSheetHTML(order, { showUrlText: true })}
-                    </div>`);
+                </div>`);
             printWindow.document.write('</div></body></html>');
-
             printWindow.document.close();
             printWindow.focus();
             setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
@@ -2461,11 +1888,8 @@
                 ph: document.getElementById('ph').checked,
                 nv: document.getElementById('nv').checked,
                 retencion: document.getElementById('retencion').checked,
-                    mangueras: document.getElementById('mangueras').checked,
-                    verification_checklist: normalizeVerificationChecklist(verificationChecklistState),
-                    verification_files: []
-                };
-
+                mangueras: document.getElementById('mangueras').checked,
+            };
             if (!draft.fecha || !draft.nombre || !draft.vehiculo || !draft.dominio) return showNotification("Complete los campos básicos para imprimir un borrador.");
             printWorkOrder(draft);
         });
@@ -2474,140 +1898,6 @@
         const backupBtn = document.getElementById('backup-btn');
         const restoreBtn = document.getElementById('restore-btn');
         const restoreInput = document.getElementById('restore-input');
-        const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
-        const MAX_BACKUP_ORDERS = 10000;
-
-        function normalizeBackup(data, userId) {
-            if (!Array.isArray(data) || data.length === 0 || data.length > MAX_BACKUP_ORDERS) {
-                throw new Error(`El archivo debe contener entre 1 y ${MAX_BACKUP_ORDERS} órdenes.`);
-            }
-            let serialized;
-            try {
-                serialized = JSON.stringify(data);
-            } catch {
-                throw new Error('El archivo contiene una estructura que no se puede procesar.');
-            }
-            if (new TextEncoder().encode(serialized).byteLength > MAX_BACKUP_BYTES) {
-                throw new Error('El archivo supera el límite de 20 MiB.');
-            }
-            const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            const verificationItems = ['REGULADOR', 'MANGUERAS GNC', 'FILTRO DE GAS', 'CAÑO ALTA PRESION',
-                'MANGUERAS AGUA', 'CUNA', 'CILINDRO', 'VALVULA CILINDRO', 'RETENCION', 'NIPLES Y VIROLAS',
-                'SISTEMA VENTEO', 'CABLEADO VALVULA'];
-            const normalizeBackupVerificationChecklist = value => {
-                const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-                return Object.fromEntries(verificationItems.map(item => {
-                    const entry = source[item] && typeof source[item] === 'object' && !Array.isArray(source[item]) ? source[item] : {};
-                    const status = ['OK', 'NO OK', 'N/A'].includes(entry.status) ? entry.status : null;
-                    const note = typeof entry.note === 'string' ? entry.note : '';
-                    return [item, { status, note }];
-                }));
-            };
-            const normalizeBackupVerificationFiles = value => Array.isArray(value)
-                ? value.filter(path => typeof path === 'string' && path.length <= 8192
-                    && VERIFICATION_FILE_PATH_PATTERN.test(path))
-                : [];
-            const flags = ['garantia', 'oblea', 'ph', 'nv', 'retencion', 'mangueras'];
-            const allowed = new Set(['id', 'user_id', 'order_number', 'orderNumber', 'fecha', 'nombre',
-                'telefono', 'vehiculo', 'dominio', 'novedades', ...flags, 'fotos', 'verification_checklist',
-                'verification_files', 'status',
-                'monto_cobrado', 'forma_pago', 'notas_extra', 'created_at', 'createdAt']);
-            const ids = new Set();
-
-            return data.map((source, index) => {
-                const label = `Orden ${index + 1}`;
-                if (!source || typeof source !== 'object' || Array.isArray(source)) {
-                    throw new Error(`${label}: cada entrada debe ser un objeto.`);
-                }
-                const unknown = Object.keys(source).find(key => !allowed.has(key));
-                if (unknown) throw new Error(`${label}: el campo "${unknown}" no está permitido.`);
-                if (source.user_id != null && source.user_id !== userId) {
-                    throw new Error(`${label}: pertenece a otro usuario.`);
-                }
-                const legacy = source.order_number == null && source.orderNumber != null;
-                if (source.order_number != null && source.orderNumber != null && source.order_number !== source.orderNumber) {
-                    throw new Error(`${label}: order_number y orderNumber no coinciden.`);
-                }
-                const orderNumber = source.order_number ?? source.orderNumber;
-                if (!Number.isSafeInteger(orderNumber) || orderNumber < 1) {
-                    throw new Error(`${label}: el número de orden debe ser un entero positivo.`);
-                }
-
-                let id = source.id;
-                if (legacy && (id == null || !uuid.test(id))) id = crypto.randomUUID();
-                if (typeof id !== 'string' || !uuid.test(id)) {
-                    throw new Error(`${label}: el ID debe ser un UUID válido.`);
-                }
-                id = id.toLowerCase();
-                if (ids.has(id)) throw new Error(`${label}: el ID está duplicado en el archivo.`);
-                ids.add(id);
-
-                const requiredText = {};
-                for (const field of ['nombre', 'vehiculo', 'dominio', 'novedades']) {
-                    if (typeof source[field] !== 'string' || !source[field].trim()) {
-                        throw new Error(`${label}: el campo "${field}" debe contener texto.`);
-                    }
-                    requiredText[field] = source[field];
-                }
-                if (typeof source.fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(source.fecha)) {
-                    throw new Error(`${label}: fecha debe usar el formato AAAA-MM-DD.`);
-                }
-                const parsedDate = new Date(source.fecha + 'T00:00:00Z');
-                if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== source.fecha) {
-                    throw new Error(`${label}: fecha no es una fecha calendario válida.`);
-                }
-
-                const normalizedFlags = {};
-                for (const field of flags) {
-                    const value = source[field] ?? false;
-                    if (typeof value !== 'boolean') throw new Error(`${label}: "${field}" debe ser booleano.`);
-                    normalizedFlags[field] = value;
-                }
-                const optionalText = {};
-                for (const field of ['telefono', 'forma_pago', 'notas_extra']) {
-                    const value = source[field] ?? '';
-                    if (typeof value !== 'string') throw new Error(`${label}: "${field}" debe ser texto.`);
-                    optionalText[field] = value;
-                }
-                const status = source.status ?? 'Abierta';
-                if (!['Abierta', 'Finalizada'].includes(status)) {
-                    throw new Error(`${label}: status debe ser "Abierta" o "Finalizada".`);
-                }
-                const fotos = source.fotos ?? [];
-                if (!Array.isArray(fotos)) throw new Error(`${label}: fotos debe ser un arreglo.`);
-                for (const photo of fotos) {
-                    if (typeof photo !== 'string' || photo.length > 8192 || !/^https:\/\/[^\s]+$/.test(photo)) {
-                        throw new Error(`${label}: cada foto debe ser una URL HTTPS válida.`);
-                    }
-                }
-                const verificationChecklist = normalizeBackupVerificationChecklist(source.verification_checklist);
-                const verificationFiles = normalizeBackupVerificationFiles(source.verification_files);
-                if (source.verification_files != null && (!Array.isArray(source.verification_files)
-                    || verificationFiles.length !== source.verification_files.length)) {
-                    throw new Error(`${label}: verification_files debe contener rutas seguras de verificación.`);
-                }
-                const amount = source.monto_cobrado ?? null;
-                if (amount !== null && (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0)) {
-                    throw new Error(`${label}: monto_cobrado debe ser un número no negativo.`);
-                }
-                if (source.created_at != null && source.createdAt != null && source.created_at !== source.createdAt) {
-                    throw new Error(`${label}: created_at y createdAt no coinciden.`);
-                }
-                const createdAt = source.created_at ?? source.createdAt;
-                if (createdAt != null && (typeof createdAt !== 'string' || !Number.isFinite(Date.parse(createdAt)))) {
-                    throw new Error(`${label}: la fecha de creación no es válida.`);
-                }
-
-                const normalized = {
-                    id, user_id: userId, order_number: orderNumber, fecha: source.fecha,
-                    ...requiredText, ...optionalText, ...normalizedFlags, fotos: [...fotos],
-                    verification_checklist: verificationChecklist, verification_files: verificationFiles,
-                    status, monto_cobrado: amount
-                };
-                if (createdAt != null) normalized.created_at = createdAt;
-                return normalized;
-            });
-        }
 
         // --- EVENT LISTENERS: BACKUP/RESTORE ---
 
@@ -2641,27 +1931,21 @@
         restoreInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const ownerId = currentUser?.id;
-            if (!ownerId) return showNotification('Debes iniciar sesión para restaurar un backup.');
-            if (file.size > MAX_BACKUP_BYTES) {
-                restoreInput.value = '';
-                return showNotification('No se puede restaurar: el archivo supera el límite de 20 MiB.');
-            }
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const data = normalizeBackup(JSON.parse(event.target.result), ownerId);
+                    const data = JSON.parse(event.target.result);
+                    if (!Array.isArray(data)) throw new Error("Formato inválido");
                     
                     showNotification(
-                        "¡Atención! Se reemplazarán tus órdenes con las del archivo en una única transacción. Se conservarán los UUID existentes. ¿Deseas continuar?",
+                        "<b>¡Atención!</b> Estás a punto de reemplazar tus datos en la nube con los del archivo. Esta acción no se puede deshacer. <br><br> ¿Deseas continuar?",
                         true,
-                        () => restoreToCloud(data, ownerId)
+                        () => restoreToCloud(data)
                     );
                 } catch (err) {
-                    showNotification("No se puede restaurar: " + err.message);
+                    showNotification("Error: El archivo no es válido.");
                 }
             };
-            reader.onerror = () => showNotification('No se puede restaurar: no fue posible leer el archivo.');
             reader.readAsText(file);
             restoreInput.value = '';
         });
@@ -2670,42 +1954,43 @@
 
         /**
          * Restaura un backup de órdenes a Supabase.
-         * Valida nuevamente y llama a una única transacción PostgreSQL.
+         * Flujo: 1) Borra todas las órdenes actuales del usuario,
+         * 2) Inserta las órdenes del archivo JSON.
          * Muestra progreso y resultado al usuario.
          * @async
          * @function restoreToCloud
          * @param {Array<Object>} data - Array de órdenes desde el archivo JSON
          * @returns {Promise<void>}
          */
-        let restoreInProgress = false;
-
-        async function restoreToCloud(data, ownerId = currentUser?.id) {
-            if (restoreInProgress) return;
-            restoreInProgress = true;
+        async function restoreToCloud(data) {
             showNotification("Restaurando datos en la nube... Por favor espera.");
             try {
-                if (!ownerId || currentUser?.id !== ownerId) {
-                    throw new Error('La sesión cambió antes de confirmar la restauración.');
-                }
-                const orders = normalizeBackup(data, ownerId);
-                const { error } = await supabaseClient.rpc('restore_work_orders', {
-                    p_orders: orders,
-                    p_user_id: ownerId
+                // 1. Borrar órdenes actuales del usuario
+                const { error: delError } = await supabaseClient
+                    .from('work_orders')
+                    .delete()
+                    .eq('user_id', currentUser.id);
+                
+                if (delError) throw delError;
+
+                // 2. Preparar nuevos datos (limpiando IDs antiguos si es necesario)
+                const newOrders = data.map(order => {
+                    const { id, ...rest } = order; // Dejar que Supabase genere nuevos UUIDs
+                    return { ...rest, user_id: currentUser.id };
                 });
-                if (currentUser?.id !== ownerId) {
-                    throw new Error('La sesión cambió durante la solicitud. Recarga y verifica las órdenes antes de reintentar.');
-                }
-                if (error) {
-                    throw new Error('La restauración segura no está disponible. Verifica que la migración restore_work_orders esté desplegada. ' + error.message);
-                }
+
+                // 3. Insertar en lotes
+                const { error: insError } = await supabaseClient
+                    .from('work_orders')
+                    .insert(newOrders);
+                
+                if (insError) throw insError;
 
                 showNotification("¡Restauración completada con éxito!");
-                await fetchOrders();
+                fetchOrders();
             } catch (err) {
                 console.error(err);
-                showNotification("Restauración no confirmada: " + err.message);
-            } finally {
-                restoreInProgress = false;
+                showNotification("Error durante la restauración: " + err.message);
             }
         }
 
@@ -2716,7 +2001,7 @@
          * Modo simple: muestra mensaje con botón OK.
          * Modo confirmación: muestra mensaje con botones Confirmar/Cancelar.
          * @function showNotification
-         * @param {string} msg - Mensaje de texto; no admite HTML.
+         * @param {string} msg - Mensaje a mostrar (admite HTML)
          * @param {boolean} [isConfirm=false] - Si true, muestra botones de confirmación
          * @param {Function|null} [callback=null] - Función a ejecutar al confirmar
          * @returns {void}
@@ -2725,17 +2010,17 @@
             const modal = document.getElementById('notification-modal');
             const message = document.getElementById('notification-message');
             const buttons = document.getElementById('modal-buttons');
-            message.textContent = msg;
+            message.innerHTML = msg;
             modal.classList.remove('hidden');
-            buttons.textContent = '';
+            buttons.innerHTML = '';
             if (isConfirm) {
-                const b1 = document.createElement('button'); b1.className = "bg-red-600 text-white px-4 py-2 rounded-lg mr-2"; b1.textContent = "Confirmar";
+                const b1 = document.createElement('button'); b1.className = "bg-red-600 text-white px-5 py-3 rounded-lg mr-2 min-h-[44px] font-bold"; b1.textContent = "Confirmar";
                 b1.onclick = () => { callback(); modal.classList.add('hidden'); };
-                const b2 = document.createElement('button'); b2.className = "bg-gray-300 px-4 py-2 rounded-lg"; b2.textContent = "Cancelar";
+                const b2 = document.createElement('button'); b2.className = "bg-gray-300 px-5 py-3 rounded-lg min-h-[44px] font-bold"; b2.textContent = "Cancelar";
                 b2.onclick = () => modal.classList.add('hidden');
                 buttons.append(b1, b2);
             } else {
-                const b = document.createElement('button'); b.className = "bg-indigo-600 text-white px-4 py-2 rounded-lg"; b.textContent = "OK";
+                const b = document.createElement('button'); b.className = "bg-indigo-600 text-white px-5 py-3 rounded-lg min-h-[44px] font-bold"; b.textContent = "OK";
                 b.onclick = () => modal.classList.add('hidden');
                 buttons.append(b);
             }
@@ -2752,21 +2037,11 @@
          */
         const urlParams = new URLSearchParams(window.location.search);
         const orderIdParam = urlParams.get('id');
-        supabaseClient.auth.onAuthStateChange((_event, session) => {
-            if (orderIdParam || session?.user?.id === currentUser?.id) return;
-            ++authRequest;
-            clearAccountState();
-            if (session?.user) setTimeout(() => checkUser(), 0);
-        });
         if (orderIdParam) {
             showPublicOrderView(orderIdParam);
         } else {
             checkUser();
-            const fechaInput = document.getElementById('fecha');
-            fechaInput.valueAsDate = new Date();
-            fechaInput.addEventListener('input', updateFechaDisplay);
-            fechaInput.addEventListener('change', updateFechaDisplay);
-            updateFechaDisplay();
+            document.getElementById('fecha').valueAsDate = new Date();
         }
 
         /**
